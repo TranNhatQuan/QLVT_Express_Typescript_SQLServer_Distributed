@@ -1,6 +1,6 @@
 import { DataSource, EntityManager } from "typeorm";
 import { config } from "../configs";
-const { masterDb } = config;
+const { masterDb, shardHCM, shardHN, shardUser } = config;
 const rootPath = config.isProduction() ? "dist" : "src";
 
 export const AppDataSources = {
@@ -25,11 +25,11 @@ export const AppDataSources = {
       rootPath + "/modules/*/entities/*.entity.{ts,js}",
       rootPath + "/modules/*/*/entities/*.entity.{ts,js}",
     ],
-    host: masterDb.host,
-    port: masterDb.port,
-    username: masterDb.username,
-    password: masterDb.password,
-    database: masterDb.database,
+    host: shardUser.host,
+    port: shardUser.port,
+    username: shardUser.username,
+    password: shardUser.password,
+    database: shardUser.database,
     maxQueryExecutionTime: 10000,
     logging: false,
     synchronize: false,
@@ -40,11 +40,11 @@ export const AppDataSources = {
       rootPath + "/modules/*/entities/*.entity.{ts,js}",
       rootPath + "/modules/*/*/entities/*.entity.{ts,js}",
     ],
-    host: masterDb.host,
-    port: masterDb.port,
-    username: masterDb.username,
-    password: masterDb.password,
-    database: masterDb.database,
+    host: shardHCM.host,
+    port: shardHCM.port,
+    username: shardHCM.username,
+    password: shardHCM.password,
+    database: shardHCM.database,
     maxQueryExecutionTime: 10000,
     logging: false,
     synchronize: false,
@@ -55,11 +55,11 @@ export const AppDataSources = {
       rootPath + "/modules/*/entities/*.entity.{ts,js}",
       rootPath + "/modules/*/*/entities/*.entity.{ts,js}",
     ],
-    host: masterDb.host,
-    port: masterDb.port,
-    username: masterDb.username,
-    password: masterDb.password,
-    database: masterDb.database,
+    host: shardHN.host,
+    port: shardHN.port,
+    username: shardHN.username,
+    password: shardHN.password,
+    database: shardHN.database,
     maxQueryExecutionTime: 10000,
     logging: false,
     synchronize: false,
