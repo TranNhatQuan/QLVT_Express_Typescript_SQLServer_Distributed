@@ -1,5 +1,10 @@
 import { Expose, Type } from "class-transformer";
-import { BaseEntity, Column, CreateDateColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+} from "typeorm";
 
 export class AppBaseEntity extends BaseEntity {
   @Expose()
@@ -19,6 +24,9 @@ export class AppBaseEntity extends BaseEntity {
   @Expose()
   @Column({ type: "varchar", length: 255, nullable: true, default: "0" })
   updatedBy: string;
+
+  @DeleteDateColumn()
+  deletedTime: Date;
 
   setCreatedAndUpdatedBy(userId: string) {
     this.createdBy = userId;
