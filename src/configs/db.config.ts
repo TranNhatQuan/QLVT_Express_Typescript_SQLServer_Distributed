@@ -1,6 +1,6 @@
-import { IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNumber, IsString } from "class-validator";
 
-export class MySqlDataSourceConfig {
+export class MSSqlDataSourceConfig {
   @IsString()
   host: string;
 
@@ -15,8 +15,4 @@ export class MySqlDataSourceConfig {
 
   @IsString()
   database: string;
-
-  @IsString()
-  @IsOptional()
-  secondDatabase?: string;
 }
