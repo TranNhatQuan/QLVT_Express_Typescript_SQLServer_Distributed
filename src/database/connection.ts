@@ -92,3 +92,10 @@ export const createQueryManager = async <T>(
     await queryRunner.release();
   }
 };
+
+export const initDataSource = async () => {
+  await AppDataSources.master.initialize();
+  await AppDataSources.shardUser.initialize();
+  await AppDataSources.shardHCM.initialize();
+  await AppDataSources.shardHN.initialize();
+};

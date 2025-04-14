@@ -12,7 +12,7 @@ import morgan from "morgan";
 import "reflect-metadata";
 import Container from "typedi";
 import { Config, validateEnv } from "./configs";
-import { AppDataSource } from "./database/connection";
+import { initDataSource } from "./database/connection";
 import { QueueManager, setupQueues } from "./queues/queues";
 import { setupWorkers } from "./queues/workers";
 import { handleError } from "./utils/error";
@@ -151,7 +151,7 @@ export class App {
     const start = Date.now();
 
     validateEnv(this.config);
-    await AppDataSource.initialize();
+    await initDataSource();
 
     await Promise.all([Container.get(SystemCronJobService).initCronJob()]);
     setupWorkers();
