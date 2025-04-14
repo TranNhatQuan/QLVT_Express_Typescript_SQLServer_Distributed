@@ -1,0 +1,20 @@
+import * as express from "express";
+import { ExpressMiddlewareInterface, Middleware } from "routing-controllers";
+import { Service } from "typedi";
+import _ from "lodash";
+
+@Service()
+@Middleware({ type: "before" })
+export class AssignReqParamsToQueryMiddleware
+  implements ExpressMiddlewareInterface
+{
+  public async use(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) {
+    _.assign(req.query, req.params);
+
+    return next();
+  }
+}
