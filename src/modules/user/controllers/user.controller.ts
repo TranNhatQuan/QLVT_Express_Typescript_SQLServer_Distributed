@@ -1,4 +1,4 @@
-import { Get, JsonController, Param, QueryParams } from 'routing-controllers'
+import { Get, JsonController, QueryParams } from 'routing-controllers'
 import { Inject, Service } from 'typedi'
 import { ResponseWrapper } from '../../../utils/response'
 import { UserService } from '../services/user.service'
@@ -10,7 +10,7 @@ export class UserController {
     constructor(@Inject() public userService: UserService) {}
 
     @Get('/users')
-    async getListSportEvent(
+    async getListUser(
         @QueryParams({
             required: true,
             transform: {
