@@ -8,6 +8,12 @@ export class User extends AppBaseEntity {
     @PrimaryColumn({ type: 'varchar', nullable: false, length: 255 })
     userId: string
 
+    @Column({ type: 'varchar', length: 255, unique: true })
+    username: string
+
+    @Column({ type: 'varchar', length: 255 })
+    password: string
+
     @Column({
         type: 'varchar',
         nullable: false,
