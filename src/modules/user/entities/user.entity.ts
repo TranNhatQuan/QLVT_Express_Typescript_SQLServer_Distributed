@@ -37,7 +37,7 @@ export class User extends AppBaseEntity {
 
     @Column({
         type: 'varchar',
-        nullable: false,
+        nullable: true,
         length: 255,
     })
     email: string

@@ -100,6 +100,10 @@ export const Errors = {
         'error.accountBanned',
         'Your account has been banned. Please contact our customer service for help.'
     ),
+    PasswordNotChanged: new ErrorResp(
+        'error.passwordNotChanged',
+        'New password must be different from old password.'
+    ),
     AccountSelfExcluded: new ErrorResp(
         'error.accountSelfExcluded',
         'Your account was closed.'

@@ -1,5 +1,11 @@
 import { Expose } from 'class-transformer'
-import { IsEnum, IsNotEmpty } from 'class-validator'
+import {
+    IsEnum,
+    IsNotEmpty,
+    IsOptional,
+    MaxLength,
+    MinLength,
+} from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserRole } from '../types/role.type'
 
@@ -18,6 +24,8 @@ export class CreateUserRequest extends BasePaginationReq {
 
     @Expose()
     @IsNotEmpty()
+    @MinLength(8)
+    @MaxLength(20)
     password: string
 
     @Expose()
@@ -33,6 +41,6 @@ export class CreateUserRequest extends BasePaginationReq {
     phone: string
 
     @Expose()
-    @IsNotEmpty()
-    email: string
+    @IsOptional()
+    email?: string
 }

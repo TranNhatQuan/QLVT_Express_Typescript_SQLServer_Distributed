@@ -6,8 +6,9 @@ import {
     UserFilter,
 } from '../requests/get-list-user.request'
 import { plainToInstance } from 'class-transformer'
-import { AppDataSources } from '../../../database/connection'
+import { AppDataSources, startTransaction } from '../../../database/connection'
 import { removeUndefinedFields } from '../../../utils'
+import { UpdateUserRequest } from '../requests/update-user.request'
 
 @Service()
 export class UserService {
@@ -43,5 +44,13 @@ export class UserService {
         req.pagination.total = total
 
         return users
+    }
+
+    async updateUser(req: UpdateUserRequest) {
+        await startTransaction(AppDataSources.shardHCM, async (mannager) => {
+            mannager.update(User, req.userId, req.getDataUpdate())
+        })
+
+        return true
     }
 }
