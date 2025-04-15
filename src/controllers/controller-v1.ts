@@ -1,1 +1,1 @@
-export const RoutingControllersV1 = [];
+export const RoutingControllersV1 = []

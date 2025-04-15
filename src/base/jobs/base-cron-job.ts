@@ -1,39 +1,39 @@
-import { QueueManager, QueueName } from "../../queues/queues";
-import Container from "typedi";
-import { IBaseJob } from "./base.job";
+import { QueueManager, QueueName } from '../../queues/queues'
+import Container from 'typedi'
+import { IBaseJob } from './base.job'
 
 export abstract class BaseCronJob implements IBaseJob {
-  //region Properties
+    //region Properties
 
-  protected _pattern: string;
-  protected _queueName: QueueName;
+    protected _pattern: string
+    protected _queueName: QueueName
 
-  jobData: unknown;
+    jobData: unknown
 
-  //endregion
+    //endregion
 
-  protected constructor(queue: QueueName, pattern: string) {
-    this._queueName = queue;
-    this._pattern = pattern;
-  }
+    protected constructor(queue: QueueName, pattern: string) {
+        this._queueName = queue
+        this._pattern = pattern
+    }
 
-  //region Abstract Methods
+    //region Abstract Methods
 
-  abstract execute();
+    abstract execute()
 
-  //endregion
+    //endregion
 
-  //region Public Methods
+    //region Public Methods
 
-  async pushJobToQueueAsync() {
-    return Container.get(QueueManager)
-      .getQueue(this._queueName)
-      .add(this._queueName, this.jobData, {
-        repeat: {
-          pattern: this._pattern,
-        },
-      });
-  }
+    async pushJobToQueueAsync() {
+        return Container.get(QueueManager)
+            .getQueue(this._queueName)
+            .add(this._queueName, this.jobData, {
+                repeat: {
+                    pattern: this._pattern,
+                },
+            })
+    }
 
-  //endregion
+    //endregion
 }

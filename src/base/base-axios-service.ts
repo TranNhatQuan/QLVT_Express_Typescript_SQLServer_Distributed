@@ -1,41 +1,41 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig } from 'axios'
 
 export abstract class BaseAxiosService {
-  protected _baseUrl: string;
-  protected _apiKey: string;
+    protected _baseUrl: string
+    protected _apiKey: string
 
-  //region Getters and Setters
+    //region Getters and Setters
 
-  get baseUrl() {
-    return this._baseUrl;
-  }
+    get baseUrl() {
+        return this._baseUrl
+    }
 
-  get apiKey(): string {
-    return this._apiKey;
-  }
+    get apiKey(): string {
+        return this._apiKey
+    }
 
-  //endregion
+    //endregion
 
-  //region Protected Methods
+    //region Protected Methods
 
-  protected async getAsync(
-    path: string,
-    queries: Record<string, string>,
-    authHeader: object = null
-  ) {
-    const url = `${this.baseUrl}${path}`;
+    protected async getAsync(
+        path: string,
+        queries: Record<string, string>,
+        authHeader: object = null
+    ) {
+        const url = `${this.baseUrl}${path}`
 
-    const axiosConfig: AxiosRequestConfig = {
-      method: "GET",
-      url,
-      headers: authHeader,
-      params: queries,
-    };
+        const axiosConfig: AxiosRequestConfig = {
+            method: 'GET',
+            url,
+            headers: authHeader,
+            params: queries,
+        }
 
-    const res = await axios(axiosConfig);
+        const res = await axios(axiosConfig)
 
-    return res.data;
-  }
+        return res.data
+    }
 
-  //endregion
+    //endregion
 }

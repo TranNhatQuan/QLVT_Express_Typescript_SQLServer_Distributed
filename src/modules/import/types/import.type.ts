@@ -1,4 +1,4 @@
 export enum ImportType {
-  Internal = "internal",
-  External = "external",
+    Internal = 'internal',
+    External = 'external',
 }

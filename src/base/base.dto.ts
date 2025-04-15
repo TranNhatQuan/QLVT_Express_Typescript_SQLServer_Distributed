@@ -1,9 +1,9 @@
-import { Expose } from "class-transformer";
+import { Expose } from 'class-transformer'
 
 export class BaseDTO {
-  @Expose()
-  createdTime: Date;
+    @Expose()
+    createdTime: Date
 
-  @Expose()
-  updatedTime: Date;
+    @Expose()
+    updatedTime: Date
 }

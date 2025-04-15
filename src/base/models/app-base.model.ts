@@ -1,22 +1,22 @@
-import { Expose, Type } from "class-transformer";
+import { Expose, Type } from 'class-transformer'
 
 export class AppBaseModel {
-  @Expose()
-  @Type(() => Date)
-  createdTime: Date;
+    @Expose()
+    @Type(() => Date)
+    createdTime: Date
 
-  @Expose()
-  @Type(() => Date)
-  updatedTime: Date;
+    @Expose()
+    @Type(() => Date)
+    updatedTime: Date
 
-  @Expose()
-  createdBy: string;
+    @Expose()
+    createdBy: string
 
-  @Expose()
-  updatedBy: string;
+    @Expose()
+    updatedBy: string
 
-  setCreatedAndUpdatedBy(userId: string) {
-    this.createdBy = userId;
-    this.updatedBy = userId;
-  }
+    setCreatedAndUpdatedBy(userId: string) {
+        this.createdBy = userId
+        this.updatedBy = userId
+    }
 }

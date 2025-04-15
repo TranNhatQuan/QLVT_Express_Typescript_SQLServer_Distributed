@@ -1,18 +1,18 @@
-import { IsNumber, IsString } from "class-validator";
+import { IsNumber, IsString } from 'class-validator'
 
 export class MSSqlDataSourceConfig {
-  @IsString()
-  host: string;
+    @IsString()
+    host: string
 
-  @IsNumber()
-  port: number;
+    @IsNumber()
+    port: number
 
-  @IsString()
-  username: string;
+    @IsString()
+    username: string
 
-  @IsString()
-  password: string;
+    @IsString()
+    password: string
 
-  @IsString()
-  database: string;
+    @IsString()
+    database: string
 }

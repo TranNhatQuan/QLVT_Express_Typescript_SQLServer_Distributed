@@ -1,9 +1,9 @@
-import { BaseEntity, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { BaseEntity, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 
 export class AppBaseEntityWithoutCreatedBy extends BaseEntity {
-  @CreateDateColumn()
-  createdTime: Date;
+    @CreateDateColumn()
+    createdTime: Date
 
-  @UpdateDateColumn()
-  updatedTime: Date;
+    @UpdateDateColumn()
+    updatedTime: Date
 }

@@ -1,9 +1,9 @@
-import { IsNumber, IsString } from "class-validator";
+import { IsNumber, IsString } from 'class-validator'
 
 export class RedisConfig {
-  @IsString()
-  host: string;
+    @IsString()
+    host: string
 
-  @IsNumber()
-  port: number;
+    @IsNumber()
+    port: number
 }

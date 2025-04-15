@@ -1,29 +1,29 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { AppBaseEntity } from "../../../base/base.entity";
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
+import { AppBaseEntity } from '../../../base/base.entity'
 
-@Entity("Warehouse")
+@Entity('Warehouse')
 export class WarehouseEntity extends AppBaseEntity {
-  @PrimaryGeneratedColumn()
-  warehouseId: number;
+    @PrimaryGeneratedColumn()
+    warehouseId: number
 
-  @Column({
-    type: "varchar",
-    nullable: false,
-    length: 50,
-  })
-  name: string;
+    @Column({
+        type: 'varchar',
+        nullable: false,
+        length: 50,
+    })
+    name: string
 
-  @Column({
-    type: "varchar",
-    nullable: false,
-    length: 255,
-  })
-  address: string;
+    @Column({
+        type: 'varchar',
+        nullable: false,
+        length: 255,
+    })
+    address: string
 
-  @Column({
-    type: "varchar",
-    nullable: false,
-    length: 50,
-  })
-  branchId: string;
+    @Column({
+        type: 'varchar',
+        nullable: false,
+        length: 50,
+    })
+    branchId: string
 }
