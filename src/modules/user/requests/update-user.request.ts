@@ -1,9 +1,10 @@
 import { Expose, plainToInstance } from 'class-transformer'
-import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator'
+import { IsEnum, IsIn, IsNotEmpty, IsOptional } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserRole } from '../types/role.type'
 import { removeUndefinedFields } from '../../../utils'
 import { UserDTO } from '../dtos/user.dto'
+import { DBType } from '../../../configs/types/application-constants.type'
 
 export class UpdateUserRequest extends BasePaginationReq {
     @Expose()
@@ -34,6 +35,10 @@ export class UpdateUserRequest extends BasePaginationReq {
     @Expose()
     @IsNotEmpty()
     userId: string
+
+    @Expose()
+    @IsIn([DBType.HCM, DBType.HN])
+    dbType: DBType
 
     userAction: UserDTO
 
