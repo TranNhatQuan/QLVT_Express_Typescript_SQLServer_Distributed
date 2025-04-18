@@ -2,18 +2,23 @@ import { Column, Entity, PrimaryColumn } from 'typeorm'
 import { AppBaseEntity } from '../../../base/base.entity'
 import { UserRole } from '../types/role.type'
 import { randomUUID } from 'crypto'
+import { Expose } from 'class-transformer'
 
 @Entity('User')
 export class User extends AppBaseEntity {
+    @Expose()
     @PrimaryColumn({ type: 'varchar', nullable: false, length: 255 })
     userId: string
 
+    @Expose()
     @Column({ type: 'varchar', length: 255, unique: true })
     username: string
 
+    @Expose()
     @Column({ type: 'varchar', length: 255 })
     password: string
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: false,
@@ -21,6 +26,7 @@ export class User extends AppBaseEntity {
     })
     name: string
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: false,
@@ -28,6 +34,7 @@ export class User extends AppBaseEntity {
     })
     address: string
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: false,
@@ -35,6 +42,7 @@ export class User extends AppBaseEntity {
     })
     phone: string
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: true,
@@ -42,9 +50,11 @@ export class User extends AppBaseEntity {
     })
     email: string
 
+    @Expose()
     @Column({ type: 'date', nullable: false })
     dob: Date
 
+    @Expose()
     @Column({
         type: 'int',
         nullable: false,
@@ -52,6 +62,7 @@ export class User extends AppBaseEntity {
     })
     role: UserRole
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: false,

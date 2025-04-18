@@ -1,6 +1,7 @@
 import { Expose } from 'class-transformer'
 import {
     IsEnum,
+    IsIn,
     IsNotEmpty,
     IsOptional,
     MaxLength,
@@ -8,6 +9,8 @@ import {
 } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserRole } from '../types/role.type'
+import { DBType } from '../../../configs/types/application-constants.type'
+import { UserDTO } from '../dtos/user.dto'
 
 export class CreateUserRequest extends BasePaginationReq {
     @Expose()
@@ -43,4 +46,10 @@ export class CreateUserRequest extends BasePaginationReq {
     @Expose()
     @IsOptional()
     email?: string
+
+    @Expose()
+    @IsIn([DBType.HCM, DBType.HN])
+    dbType: DBType
+
+    userAction?: UserDTO
 }

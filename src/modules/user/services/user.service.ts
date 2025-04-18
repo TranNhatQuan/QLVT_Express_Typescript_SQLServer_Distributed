@@ -9,6 +9,9 @@ import { plainToInstance } from 'class-transformer'
 import { AppDataSources, startTransaction } from '../../../database/connection'
 import { removeUndefinedFields } from '../../../utils'
 import { UpdateUserRequest } from '../requests/update-user.request'
+import { CreateUserRequest } from '../requests/create-user.request'
+import { DBTypeMapping } from '../../../configs/types/application-constants.type'
+import { DeleteUserRequest } from '../requests/delete-user.request'
 
 @Service()
 export class UserService {
@@ -47,10 +50,38 @@ export class UserService {
     }
 
     async updateUser(req: UpdateUserRequest) {
-        await startTransaction(AppDataSources.shardHCM, async (mannager) => {
-            mannager.update(User, req.userId, req.getDataUpdate())
+        await startTransaction(DBTypeMapping[req.dbType], async (manager) => {
+            manager.update(User, req.userId, req.getDataUpdate())
         })
 
         return true
+    }
+
+    async createUser(req: CreateUserRequest) {
+        return await startTransaction(
+            DBTypeMapping[req.dbType],
+            async (manager) => {
+                const userEntity = plainToInstance(User, req, {
+                    excludeExtraneousValues: true,
+                })
+
+                userEntity.genId()
+                userEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+
+                await manager.insert(User, userEntity)
+
+                return userEntity
+            }
+        )
+    }
+
+    async deleteUser(req: DeleteUserRequest) {
+        return await startTransaction(
+            DBTypeMapping[req.dbType],
+            async (manager) => {
+                await req.validateRequest(manager)
+                await manager.delete(User, { userId: req.userId })
+            }
+        )
     }
 }

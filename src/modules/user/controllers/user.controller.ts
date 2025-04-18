@@ -1,8 +1,10 @@
 import {
     Body,
     CurrentUser,
+    Delete,
     Get,
     JsonController,
+    Post,
     Put,
     QueryParams,
     UseBefore,
@@ -15,6 +17,8 @@ import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqP
 import { UpdateUserRequest } from '../requests/update-user.request'
 import { UserDTO } from '../dtos/user.dto'
 import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTokenMiddleware'
+import { CreateUserRequest } from '../requests/create-user.request'
+import { DeleteUserRequest } from '../requests/delete-user.request'
 
 @Service()
 @JsonController('/v1/users')
@@ -52,5 +56,42 @@ export class UserController {
 
         const result = await this.userService.updateUser(data)
         return new ResponseWrapper(result, null, data.pagination)
+    }
+
+    @Post('/')
+    @UseBefore(VerifyAccessTokenMiddleware)
+    async createUser(
+        @Body({
+            required: true,
+            transform: {
+                excludeExtraneousValues: true,
+            },
+        })
+        data: CreateUserRequest,
+        @CurrentUser({ required: true }) user: UserDTO
+    ) {
+        data.userAction = user
+
+        const result = await this.userService.createUser(data)
+        return new ResponseWrapper(result, null, data.pagination)
+    }
+
+    @Delete('/:userId/delete')
+    @UseBefore(AssignReqParamsToBodyMiddleware)
+    @UseBefore(VerifyAccessTokenMiddleware)
+    async deleteUser(
+        @Body({
+            required: true,
+            transform: {
+                excludeExtraneousValues: true,
+            },
+        })
+        data: DeleteUserRequest,
+        @CurrentUser({ required: true }) user: UserDTO
+    ) {
+        data.userAction = user
+
+        await this.userService.deleteUser(data)
+        return new ResponseWrapper(true, null, data.pagination)
     }
 }
