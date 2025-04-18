@@ -17,14 +17,16 @@ import { UpdateUserRequest } from '../requests/update-user.request'
 import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTokenMiddleware'
 import { CreateUserRequest } from '../requests/create-user.request'
 import { DeleteUserRequest } from '../requests/delete-user.request'
+import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
 
 @Service()
 @JsonController('/v1/users')
+@UseBefore(VerifyAccessTokenMiddleware)
+@UseBefore(CheckDBSelectionMiddleware)
 export class UserController {
     constructor(@Inject() public userService: UserService) {}
 
     @Get('/')
-    @UseBefore(VerifyAccessTokenMiddleware)
     async getListUser(
         @QueryParams({
             required: true,
@@ -40,7 +42,6 @@ export class UserController {
 
     @Put('/:userId/update')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    @UseBefore(VerifyAccessTokenMiddleware)
     async updateUser(
         @Body({
             required: true,
@@ -55,7 +56,6 @@ export class UserController {
     }
 
     @Post('/')
-    @UseBefore(VerifyAccessTokenMiddleware)
     async createUser(
         @Body({
             required: true,
@@ -71,7 +71,6 @@ export class UserController {
 
     @Delete('/:userId/delete')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    @UseBefore(VerifyAccessTokenMiddleware)
     async deleteUser(
         @Body({
             required: true,

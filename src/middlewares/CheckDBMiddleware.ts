@@ -19,6 +19,7 @@ export class CheckDBSelectionMiddleware implements ExpressMiddlewareInterface {
         const dbType: DBType = req['dbType']
 
         if (
+            dbType &&
             dbType != DBType.USER &&
             dbType != userDTO.originDBType &&
             userDTO.role != UserRole.CompanyAdmin
