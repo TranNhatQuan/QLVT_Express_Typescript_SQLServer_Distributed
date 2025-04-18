@@ -1,6 +1,5 @@
 import {
     Body,
-    CurrentUser,
     Delete,
     Get,
     JsonController,
@@ -15,7 +14,6 @@ import { UserService } from '../services/user.service'
 import { GetListUserRequest } from '../requests/get-list-user.request'
 import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqParamsToBodyMiddleware'
 import { UpdateUserRequest } from '../requests/update-user.request'
-import { UserDTO } from '../dtos/user.dto'
 import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTokenMiddleware'
 import { CreateUserRequest } from '../requests/create-user.request'
 import { DeleteUserRequest } from '../requests/delete-user.request'
@@ -26,6 +24,7 @@ export class UserController {
     constructor(@Inject() public userService: UserService) {}
 
     @Get('/')
+    @UseBefore(VerifyAccessTokenMiddleware)
     async getListUser(
         @QueryParams({
             required: true,
@@ -49,11 +48,8 @@ export class UserController {
                 excludeExtraneousValues: true,
             },
         })
-        data: UpdateUserRequest,
-        @CurrentUser({ required: true }) user: UserDTO
+        data: UpdateUserRequest
     ) {
-        data.userAction = user
-
         const result = await this.userService.updateUser(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
@@ -67,11 +63,8 @@ export class UserController {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateUserRequest,
-        @CurrentUser({ required: true }) user: UserDTO
+        data: CreateUserRequest
     ) {
-        data.userAction = user
-
         const result = await this.userService.createUser(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
@@ -86,11 +79,8 @@ export class UserController {
                 excludeExtraneousValues: true,
             },
         })
-        data: DeleteUserRequest,
-        @CurrentUser({ required: true }) user: UserDTO
+        data: DeleteUserRequest
     ) {
-        data.userAction = user
-
         await this.userService.deleteUser(data)
         return new ResponseWrapper(true, null, data.pagination)
     }

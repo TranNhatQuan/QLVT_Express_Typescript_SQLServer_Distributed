@@ -73,24 +73,6 @@ export class AuthMiddleware {
             next(err)
         }
     }
-
-    async verifyDepositApiKey(
-        req: AuthRequest,
-        res: Response,
-        next: NextFunction
-    ) {
-        try {
-            const key = req.headers['deposit-api-key']
-
-            if (!key || key !== this.config.depositApiKey) {
-                throw Errors.BadRequest
-            }
-
-            next()
-        } catch (err) {
-            next(err)
-        }
-    }
 }
 
 export const getAuthHeader = (req: Request) => {

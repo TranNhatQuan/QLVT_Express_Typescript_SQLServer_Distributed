@@ -1,5 +1,6 @@
 import { Expose } from 'class-transformer'
 import { UserRole } from '../types/role.type'
+import { DBType } from '../../../configs/types/application-constants.type'
 
 export class UserDTO {
     @Expose()
@@ -31,4 +32,10 @@ export class UserDTO {
 
     @Expose()
     branchId: string
+
+    originDBType?: DBType
+
+    loadOrginDBType() {
+        this.originDBType = DBType[this.branchId]
+    }
 }

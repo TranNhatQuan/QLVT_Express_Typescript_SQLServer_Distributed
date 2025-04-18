@@ -5,6 +5,10 @@ import { getAuthHeader } from '../modules/auth/auth.middleware'
 import { AuthService } from '../modules/auth/auth.service'
 import { Errors } from '../utils/error'
 import _ from 'lodash'
+import { AppDataSources } from '../database/connection'
+import { User } from '../modules/user/entities/user.entity'
+import { plainToInstance } from 'class-transformer'
+import { UserDTO } from '../modules/user/dtos/user.dto'
 
 @Service()
 @Middleware({ type: 'before' })
@@ -23,11 +27,22 @@ export class VerifyAccessTokenMiddleware implements ExpressMiddlewareInterface {
         }
 
         const payload = await this.authService.verifyToken(token)
+
+        const user = AppDataSources.shardUser
+            .createQueryBuilder()
+            .from(User, 'u')
+            .where({
+                userId: payload.userId,
+            })
+
         _.assign(req, {
             userId: payload.userId,
             roleId: payload.roleId,
             accessToken: token,
             username: payload.username,
+            userAction: plainToInstance(UserDTO, user, {
+                excludeExtraneousValues: true,
+            }),
         })
 
         return next()
