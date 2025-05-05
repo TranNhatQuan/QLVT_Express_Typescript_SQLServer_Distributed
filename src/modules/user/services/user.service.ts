@@ -65,6 +65,8 @@ export class UserService {
                     excludeExtraneousValues: true,
                 })
 
+                await req.validateRequest()
+
                 userEntity.genId()
                 userEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 

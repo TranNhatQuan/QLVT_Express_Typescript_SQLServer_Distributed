@@ -11,6 +11,7 @@ import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserRole } from '../types/role.type'
 import { DBType } from '../../../configs/types/application-constants.type'
 import { UserDTO } from '../dtos/user.dto'
+import { Errors } from '../../../utils/error'
 
 export class CreateUserRequest extends BasePaginationReq {
     @Expose()
@@ -52,4 +53,14 @@ export class CreateUserRequest extends BasePaginationReq {
     dbType: DBType
 
     userAction?: UserDTO
+
+    async validateRequest() {
+        if (this.userAction.role < this.role) {
+            throw Errors.Forbidden
+        }
+
+        if (DBType[this.branchId] !== this.dbType) {
+            throw Errors.Forbidden
+        }
+    }
 }
