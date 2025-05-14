@@ -3,6 +3,7 @@ import {
     Delete,
     Get,
     JsonController,
+    Param,
     Post,
     Put,
     QueryParams,
@@ -10,77 +11,68 @@ import {
 } from 'routing-controllers'
 import { Inject, Service } from 'typedi'
 import { ResponseWrapper } from '../../../utils/response'
-import { GetListBranchRequest } from '../requests/get-list-branch.request'
+import { GetListCustomerRequest } from '../requests/get-list-customer.request'
 import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqParamsToBodyMiddleware'
-import { UpdateBranchRequest } from '../requests/update-branch.request'
+import { UpdateCustomerRequest } from '../requests/update-customer.request'
 import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTokenMiddleware'
-import { CreateBranchRequest } from '../requests/create-branch.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
+import { CreateCustomerRequest } from '../requests/create-customer.request'
 import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
-import { BranchService } from '../services/customer.service'
+import { CustomerService } from '../services/customer.service'
 
 @Service()
-@JsonController('/v1/branchs')
+@JsonController('/v1/customers')
 @UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
-export class BranchController {
-    constructor(@Inject() public branchService: BranchService) {}
+export class CustomerController {
+    constructor(@Inject() public customerService: CustomerService) {}
 
     @Get('/')
-    async getListBranch(
+    async getListCustomer(
         @QueryParams({
             required: true,
             transform: {
                 excludeExtraneousValues: true,
             },
         })
-        data: GetListBranchRequest
+        data: GetListCustomerRequest
     ) {
-        const result = await this.branchService.getBranchs(data)
+        const result = await this.customerService.getCustomers(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
 
-    @Put('/:branchId/update')
+    @Put('/:customerId/update')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    async updateBranch(
+    async updateCustomer(
         @Body({
             required: true,
             transform: {
                 excludeExtraneousValues: true,
             },
         })
-        data: UpdateBranchRequest
+        data: UpdateCustomerRequest
     ) {
-        const result = await this.branchService.updateBranch(data)
+        const result = await this.customerService.updateCustomer(data)
         return new ResponseWrapper(result)
     }
 
     @Post('/')
-    async createBranch(
+    async createCustomer(
         @Body({
             required: true,
             transform: {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateBranchRequest
+        data: CreateCustomerRequest
     ) {
-        const result = await this.branchService.createBranch(data)
+        const result = await this.customerService.createCustomer(data)
         return new ResponseWrapper(result)
     }
 
-    @Delete('/:branchId/delete')
+    @Delete('/:customerId/delete')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    async deleteBranch(
-        @Body({
-            required: true,
-            transform: {
-                excludeExtraneousValues: true,
-            },
-        })
-        data: DeleteBranchRequest
-    ) {
-        await this.branchService.deleteBranch(data)
+    async deleteBranch(@Param('customerId') customerId: string) {
+        await this.customerService.deleteCustomer(Number(customerId))
         return new ResponseWrapper(true)
     }
 }

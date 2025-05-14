@@ -1,38 +1,46 @@
 import { Service } from 'typedi'
-import { Branch } from '../entities/branch.entity'
 import { Errors } from '../../../utils/error'
 import {
-    BranchFilter,
-    GetListBranchRequest,
-} from '../requests/get-list-branch.request'
+    CustomerFilter,
+    GetListCustomerRequest,
+} from '../requests/get-list-customer.request'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-branch.request'
+import { CreateCustomerRequest } from '../requests/create-customer.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
-import { UpdateBranchRequest } from '../requests/update-branch.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
+import { UpdateCustomerRequest } from '../requests/update-customer.request'
+import { Customer } from '../entities/customer.entity'
 
 @Service()
-export class BranchService {
-    checkBranchStatus(branchEntity: Branch) {
-        if (!branchEntity) {
-            throw Errors.BranchNotFound
+export class CustomerService {
+    checkBranchStatus(entity: Customer) {
+        if (!entity) {
+            throw Errors.CustomerNotFound
         }
     }
 
-    async getBranchs(req: GetListBranchRequest) {
+    async getCustomers(req: GetListCustomerRequest) {
         const filter = removeUndefinedFields(
-            plainToInstance(BranchFilter, req, {
+            plainToInstance(CustomerFilter, req, {
                 excludeExtraneousValues: true,
             })
         )
 
         const query = DBTypeMapping[req.dbType]
-            .getRepository(Branch)
+            .getRepository(Customer)
             .createQueryBuilder()
-            .from(Branch, 'b')
+            .from(Customer, 'b')
             .where(removeUndefinedFields(filter))
+
+        if (req.search) {
+            query.andWhere(
+                '(b.name LIKE :search OR b.address LIKE :search OR b.phone LIKE :search or b.address like :search)',
+                {
+                    search: `${req.search}%`,
+                }
+            )
+        }
 
         const countQuery = query.clone()
 
@@ -50,36 +58,36 @@ export class BranchService {
         return branchs
     }
 
-    async createBranch(req: CreateBranchRequest) {
+    async createCustomer(req: CreateCustomerRequest) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                const branchEntity = plainToInstance(Branch, req, {
+                const entity = plainToInstance(Customer, req, {
                     excludeExtraneousValues: true,
                 })
 
-                branchEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+                entity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(Branch, branchEntity)
+                await manager.insert(Customer, entity)
 
-                return branchEntity
+                return entity
             }
         )
     }
 
-    async updateBranch(req: UpdateBranchRequest) {
+    async updateCustomer(req: UpdateCustomerRequest) {
         await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Branch, req.branchId, req.getDataUpdate())
+            manager.update(Customer, req.customerId, req.getDataUpdate())
         })
 
         return true
     }
 
-    async deleteBranch(req: DeleteBranchRequest) {
+    async deleteCustomer(customerId: number) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                await manager.softDelete(Branch, { branchId: req.branchId })
+                await manager.softDelete(Customer, { customerId })
             }
         )
     }
