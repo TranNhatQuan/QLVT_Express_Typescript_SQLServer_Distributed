@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
 import { AppBaseEntity } from '../../../base/base.entity'
 
 @Entity('Product')
-export class ProductEntity extends AppBaseEntity {
+export class Product extends AppBaseEntity {
     @PrimaryGeneratedColumn()
     productId: number
 

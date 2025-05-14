@@ -3,7 +3,7 @@ import { AppBaseEntity } from '../../../base/base.entity'
 import { ColumnNumericTransformer } from '../../../database/transformers/column-numeric.transformer'
 
 @Entity('ExportReceiptDetail')
-export class ExportReceiptDetailEntity extends AppBaseEntity {
+export class ExportReceiptDetail extends AppBaseEntity {
     @PrimaryColumn({ type: 'varchar', nullable: false, length: 50 })
     exportId: string
 

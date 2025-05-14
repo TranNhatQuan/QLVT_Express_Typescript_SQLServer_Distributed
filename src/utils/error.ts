@@ -66,6 +66,22 @@ export const Errors = {
         'Invalid file type.'
     ),
     UserNotFound: new ErrorResp('error.userNotFound', 'User not found'),
+    BranchNotFound: new ErrorResp('error.branchNotFound', 'Branch not found'),
+    CustomerNotFound: new ErrorResp(
+        'error.customerNotFound',
+        'Customer not found'
+    ),
+    OrderNotFound: new ErrorResp('error.orderNotFound', 'Order not found'),
+    ImportNotFound: new ErrorResp('error.importNotFound', 'Import not found'),
+    ProductNotFound: new ErrorResp(
+        'error.productNotFound',
+        'Product not found'
+    ),
+    ExportNotFound: new ErrorResp('error.exportNotFound', 'Export not found'),
+    WarehoustNotFound: new ErrorResp(
+        'error.warehoustNotFound',
+        'Warehoust not found'
+    ),
     ProfileTypeNotFound: new ErrorResp(
         'error.profileTypeNotFound',
         'Profile type not found'

@@ -82,7 +82,7 @@ export class UserService {
             DBTypeMapping[req.dbType],
             async (manager) => {
                 await req.validateRequest(manager)
-                await manager.delete(User, { userId: req.userId })
+                await manager.softDelete(User, { userId: req.userId })
             }
         )
     }

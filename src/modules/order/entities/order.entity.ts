@@ -4,7 +4,7 @@ import { OrderType } from '../types/order.type'
 import { OrderStatus } from '../types/order-status.type'
 
 @Entity('Order')
-export class OrderEntity extends AppBaseEntity {
+export class Order extends AppBaseEntity {
     @PrimaryColumn({ type: 'varchar', nullable: false, length: 50 })
     orderId: string
 

@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryColumn } from 'typeorm'
 import { AppBaseEntity } from '../../../base/base.entity'
 
 @Entity('Branch')
-export class BranchEntity extends AppBaseEntity {
+export class Branch extends AppBaseEntity {
     @PrimaryColumn({ type: 'varchar', nullable: false, length: 50 })
     branchId: string
 
