@@ -1,37 +1,39 @@
 import { Service } from 'typedi'
-import { Branch } from '../entities/branch.entity'
 import { Errors } from '../../../utils/error'
-import {
-    BranchFilter,
-    GetListBranchRequest,
-} from '../requests/get-list-branch.request'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-branch.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
-import { UpdateBranchRequest } from '../requests/update-branch.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
+import { Order } from '../entities/order.entity'
+import {
+    GetListOrderRequest,
+    OrderFilter,
+} from '../requests/get-list-order.request'
+import { CreateOrderRequest } from '../requests/create-order.request'
+import { OrderDetail } from '../entities/order-detail.entity'
+import { UserDTO } from '../../user/dtos/user.dto'
+import { UserRole } from '../../user/types/role.type'
+import { User } from '../../user/entities/user.entity'
 
 @Service()
-export class BranchService {
-    checkBranchStatus(branchEntity: Branch) {
-        if (!branchEntity) {
-            throw Errors.BranchNotFound
+export class OrderService {
+    checkStatus(entity: Order) {
+        if (!entity) {
+            throw Errors.OrderNotFound
         }
     }
 
-    async getBranchs(req: GetListBranchRequest) {
+    async getOrders(req: GetListOrderRequest) {
         const filter = removeUndefinedFields(
-            plainToInstance(BranchFilter, req, {
+            plainToInstance(OrderFilter, req, {
                 excludeExtraneousValues: true,
             })
         )
 
         const query = DBTypeMapping[req.dbType]
-            .getRepository(Branch)
+            .getRepository(Order)
             .createQueryBuilder()
-            .from(Branch, 'b')
+            .from(Order, 'o')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()
@@ -40,7 +42,7 @@ export class BranchService {
             query
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
-                .orderBy('u.createdAt', 'ASC')
+                .orderBy('o.createdAt', 'ASC')
                 .getRawMany(),
             countQuery.getCount(),
         ])
@@ -50,36 +52,68 @@ export class BranchService {
         return branchs
     }
 
-    async createBranch(req: CreateBranchRequest) {
+    async createOrder(req: CreateOrderRequest) {
         return await startTransaction(
-            AppDataSources.master,
+            DBTypeMapping[req.getDataSource()],
             async (manager) => {
-                const branchEntity = plainToInstance(Branch, req, {
+                await req.validateRequest(manager)
+
+                const orderEntity = plainToInstance(Order, req, {
                     excludeExtraneousValues: true,
                 })
 
-                branchEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+                orderEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(Branch, branchEntity)
+                await manager.insert(Order, orderEntity)
 
-                return branchEntity
+                req.details.forEach((detail) => {
+                    detail.orderId = orderEntity.orderId
+                })
+
+                const details = []
+
+                for (const detail of req.details) {
+                    const detailEntity = plainToInstance(OrderDetail, detail, {
+                        excludeExtraneousValues: true,
+                    })
+
+                    detailEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+
+                    await manager.insert(OrderDetail, detailEntity)
+
+                    details.push(detailEntity)
+                }
+
+                orderEntity['details'] = details
+
+                return orderEntity
             }
         )
     }
 
-    async updateBranch(req: UpdateBranchRequest) {
-        await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Branch, req.branchId, req.getDataUpdate())
-        })
-
-        return true
-    }
-
-    async deleteBranch(req: DeleteBranchRequest) {
+    async deleteOrder(orderId: string, userAction: UserDTO) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                await manager.softDelete(Branch, { branchId: req.branchId })
+                const order = await manager.findOne(Order, {
+                    where: { orderId },
+                })
+
+                this.checkStatus(order)
+
+                const user = await manager.findOne(User, {
+                    where: { userId: order.userId },
+                })
+
+                if (
+                    order.createdBy !== userAction.userId ||
+                    userAction.role === UserRole.Staff ||
+                    (userAction.role === UserRole.BranchManager &&
+                        userAction.branchId !== user.branchId)
+                )
+                    throw Errors.Forbidden
+
+                await manager.softDelete(Order, { orderId })
             }
         )
     }
