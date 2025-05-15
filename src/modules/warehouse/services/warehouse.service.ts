@@ -1,37 +1,36 @@
 import { Service } from 'typedi'
-import { Branch } from '../entities/branch.entity'
 import { Errors } from '../../../utils/error'
-import {
-    BranchFilter,
-    GetListBranchRequest,
-} from '../requests/get-list-warehouse.request'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-warehouse.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
-import { UpdateBranchRequest } from '../requests/update-warehouse.request'
-import { DeleteBranchRequest } from '../requests/delete-warehouse.request'
+import { Warehouse } from '../entities/warehouse.entity'
+import {
+    GetListWarehouseRequest,
+    WarehouseFilter,
+} from '../requests/get-list-warehouse.request'
+import { CreateWarehouseRequest } from '../requests/create-warehouse.request'
+import { UpdateWarehouseRequest } from '../requests/update-warehouse.request'
 
 @Service()
-export class BranchService {
-    checkBranchStatus(branchEntity: Branch) {
-        if (!branchEntity) {
-            throw Errors.BranchNotFound
+export class WarehouseService {
+    checkStatus(entity: Warehouse) {
+        if (!entity) {
+            throw Errors.WarehouseNotFound
         }
     }
 
-    async getBranchs(req: GetListBranchRequest) {
+    async getWarehouses(req: GetListWarehouseRequest) {
         const filter = removeUndefinedFields(
-            plainToInstance(BranchFilter, req, {
+            plainToInstance(WarehouseFilter, req, {
                 excludeExtraneousValues: true,
             })
         )
 
         const query = DBTypeMapping[req.dbType]
-            .getRepository(Branch)
+            .getRepository(Warehouse)
             .createQueryBuilder()
-            .from(Branch, 'b')
+            .from(Warehouse, 'b')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()
@@ -40,7 +39,7 @@ export class BranchService {
             query
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
-                .orderBy('u.createdAt', 'ASC')
+                .orderBy('b.createdAt', 'ASC')
                 .getRawMany(),
             countQuery.getCount(),
         ])
@@ -50,36 +49,38 @@ export class BranchService {
         return branchs
     }
 
-    async createBranch(req: CreateBranchRequest) {
+    async createWarehouse(req: CreateWarehouseRequest) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                const branchEntity = plainToInstance(Branch, req, {
+                const branchEntity = plainToInstance(Warehouse, req, {
                     excludeExtraneousValues: true,
                 })
 
                 branchEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(Branch, branchEntity)
+                await manager.insert(Warehouse, branchEntity)
 
                 return branchEntity
             }
         )
     }
 
-    async updateBranch(req: UpdateBranchRequest) {
+    async updateWarehouse(req: UpdateWarehouseRequest) {
         await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Branch, req.branchId, req.getDataUpdate())
+            manager.update(Warehouse, req.warehouseId, req.getDataUpdate())
         })
 
         return true
     }
 
-    async deleteBranch(req: DeleteBranchRequest) {
+    async deleteWarehouse(warehouseId: number) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                await manager.softDelete(Branch, { branchId: req.branchId })
+                await manager.softDelete(Warehouse, {
+                    warehouseId,
+                })
             }
         )
     }

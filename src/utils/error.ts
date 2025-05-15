@@ -78,9 +78,9 @@ export const Errors = {
         'Product not found'
     ),
     ExportNotFound: new ErrorResp('error.exportNotFound', 'Export not found'),
-    WarehoustNotFound: new ErrorResp(
-        'error.warehoustNotFound',
-        'Warehoust not found'
+    WarehouseNotFound: new ErrorResp(
+        'error.warehouseNotFound',
+        'Warehouse not found'
     ),
     ProfileTypeNotFound: new ErrorResp(
         'error.profileTypeNotFound',

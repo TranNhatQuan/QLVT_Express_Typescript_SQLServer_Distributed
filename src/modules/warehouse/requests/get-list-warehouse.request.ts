@@ -4,10 +4,18 @@ import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { FindOperator, Like } from 'typeorm'
 import { DBType } from '../../../configs/types/application-constants.type'
 
-export class GetListBranchRequest extends BasePaginationReq {
+export class GetListWarehouseRequest extends BasePaginationReq {
     @Expose()
     @IsOptional()
     branchId?: string
+
+    @Expose()
+    @IsOptional()
+    name?: string
+
+    @Expose()
+    @IsOptional()
+    warehouseId?: number
 
     @Expose()
     @IsOptional()
@@ -18,9 +26,15 @@ export class GetListBranchRequest extends BasePaginationReq {
     dbType: DBType
 }
 
-export class BranchFilter {
+export class WarehouseFilter {
     @Expose()
     branchId?: string
+
+    @Expose()
+    name?: string
+
+    @Expose()
+    warehouseId?: number
 
     @Expose()
     @Transform((source) => {
@@ -30,7 +44,7 @@ export class BranchFilter {
             return Like(data.searchAddress + '%')
         }
 
-        return name
+        return data.searchAddress
     })
     address?: FindOperator<string>
 }

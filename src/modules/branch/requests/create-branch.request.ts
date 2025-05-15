@@ -5,6 +5,7 @@ import { UserDTO } from '../../user/dtos/user.dto'
 
 export class CreateBranchRequest extends BasePaginationReq {
     @Expose()
+    @MaxLength(50)
     @IsNotEmpty()
     branchId: string
 

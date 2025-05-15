@@ -3,6 +3,7 @@ import {
     Delete,
     Get,
     JsonController,
+    Param,
     Post,
     Put,
     QueryParams,
@@ -10,48 +11,47 @@ import {
 } from 'routing-controllers'
 import { Inject, Service } from 'typedi'
 import { ResponseWrapper } from '../../../utils/response'
-import { GetListBranchRequest } from '../requests/get-list-warehouse.request'
 import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqParamsToBodyMiddleware'
-import { UpdateBranchRequest } from '../requests/update-warehouse.request'
 import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTokenMiddleware'
-import { CreateBranchRequest } from '../requests/create-warehouse.request'
-import { DeleteBranchRequest } from '../requests/delete-warehouse.request'
 import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
-import { BranchService } from '../services/warehouse.service'
+import { WarehouseService } from '../services/warehouse.service'
+import { GetListWarehouseRequest } from '../requests/get-list-warehouse.request'
+import { UpdateWarehouseRequest } from '../requests/update-warehouse.request'
+import { CreateWarehouseRequest } from '../requests/create-warehouse.request'
 
 @Service()
-@JsonController('/v1/branchs')
+@JsonController('/v1/warehouses')
 @UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
-export class BranchController {
-    constructor(@Inject() public branchService: BranchService) {}
+export class WarehouseController {
+    constructor(@Inject() public warehouseService: WarehouseService) {}
 
     @Get('/')
-    async getListBranch(
+    async getListWarehouse(
         @QueryParams({
             required: true,
             transform: {
                 excludeExtraneousValues: true,
             },
         })
-        data: GetListBranchRequest
+        data: GetListWarehouseRequest
     ) {
-        const result = await this.branchService.getBranchs(data)
+        const result = await this.warehouseService.getWarehouses(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
 
-    @Put('/:branchId/update')
+    @Put('/:warehouseId/update')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    async updateBranch(
+    async updateWarehouse(
         @Body({
             required: true,
             transform: {
                 excludeExtraneousValues: true,
             },
         })
-        data: UpdateBranchRequest
+        data: UpdateWarehouseRequest
     ) {
-        const result = await this.branchService.updateBranch(data)
+        const result = await this.warehouseService.updateWarehouse(data)
         return new ResponseWrapper(result)
     }
 
@@ -63,24 +63,16 @@ export class BranchController {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateBranchRequest
+        data: CreateWarehouseRequest
     ) {
-        const result = await this.branchService.createBranch(data)
+        const result = await this.warehouseService.createWarehouse(data)
         return new ResponseWrapper(result)
     }
 
-    @Delete('/:branchId/delete')
+    @Delete('/:warehouseId/delete')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    async deleteBranch(
-        @Body({
-            required: true,
-            transform: {
-                excludeExtraneousValues: true,
-            },
-        })
-        data: DeleteBranchRequest
-    ) {
-        await this.branchService.deleteBranch(data)
+    async deleteBranch(@Param('warehouseId') warehouseId: number) {
+        await this.warehouseService.deleteWarehouse(warehouseId)
         return new ResponseWrapper(true)
     }
 }
