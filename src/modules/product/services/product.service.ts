@@ -1,37 +1,36 @@
 import { Service } from 'typedi'
-import { Branch } from '../entities/branch.entity'
 import { Errors } from '../../../utils/error'
-import {
-    BranchFilter,
-    GetListBranchRequest,
-} from '../requests/get-list-product.request'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-product.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
-import { UpdateBranchRequest } from '../requests/update-product.request'
-import { DeleteBranchRequest } from '../requests/delete-product.request'
+import { Product } from '../entities/product.entity'
+import {
+    GetListProductRequest,
+    ProductFilter,
+} from '../requests/get-list-product.request'
+import { CreateProductRequest } from '../requests/create-product.request'
+import { UpdateProductRequest } from '../requests/update-product.request'
 
 @Service()
-export class BranchService {
-    checkBranchStatus(branchEntity: Branch) {
-        if (!branchEntity) {
-            throw Errors.BranchNotFound
+export class ProductService {
+    checkStatus(entity: Product) {
+        if (!entity) {
+            throw Errors.ProductNotFound
         }
     }
 
-    async getBranchs(req: GetListBranchRequest) {
+    async getProducts(req: GetListProductRequest) {
         const filter = removeUndefinedFields(
-            plainToInstance(BranchFilter, req, {
+            plainToInstance(ProductFilter, req, {
                 excludeExtraneousValues: true,
             })
         )
 
         const query = DBTypeMapping[req.dbType]
-            .getRepository(Branch)
+            .getRepository(Product)
             .createQueryBuilder()
-            .from(Branch, 'b')
+            .from(Product, 'p')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()
@@ -40,7 +39,7 @@ export class BranchService {
             query
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
-                .orderBy('u.createdAt', 'ASC')
+                .orderBy('p.createdAt', 'ASC')
                 .getRawMany(),
             countQuery.getCount(),
         ])
@@ -50,36 +49,36 @@ export class BranchService {
         return branchs
     }
 
-    async createBranch(req: CreateBranchRequest) {
+    async createProduct(req: CreateProductRequest) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                const branchEntity = plainToInstance(Branch, req, {
+                const branchEntity = plainToInstance(Product, req, {
                     excludeExtraneousValues: true,
                 })
 
                 branchEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(Branch, branchEntity)
+                await manager.insert(Product, branchEntity)
 
                 return branchEntity
             }
         )
     }
 
-    async updateBranch(req: UpdateBranchRequest) {
+    async updateProduct(req: UpdateProductRequest) {
         await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Branch, req.branchId, req.getDataUpdate())
+            manager.update(Product, req.productId, req.getDataUpdate())
         })
 
         return true
     }
 
-    async deleteBranch(req: DeleteBranchRequest) {
+    async deleteBranch(productId: number) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                await manager.softDelete(Branch, { branchId: req.branchId })
+                await manager.softDelete(Product, { productId: productId })
             }
         )
     }

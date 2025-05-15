@@ -30,7 +30,7 @@ export class BranchFilter {
             return Like(data.searchAddress + '%')
         }
 
-        return name
+        return data.address
     })
     address?: FindOperator<string>
 }

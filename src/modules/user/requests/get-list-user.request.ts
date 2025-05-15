@@ -41,7 +41,7 @@ export class UserFilter {
             return Like(data.searchName + '%')
         }
 
-        return name
+        return data.name
     })
     name?: FindOperator<string>
 }

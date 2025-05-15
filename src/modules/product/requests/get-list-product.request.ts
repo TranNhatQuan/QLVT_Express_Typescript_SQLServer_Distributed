@@ -1,36 +1,41 @@
 import { Expose, Transform } from 'class-transformer'
-import { IsIn, IsOptional } from 'class-validator'
+import { IsIn, IsNumber, IsOptional } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { FindOperator, Like } from 'typeorm'
 import { DBType } from '../../../configs/types/application-constants.type'
 
-export class GetListBranchRequest extends BasePaginationReq {
+export class GetListProductRequest extends BasePaginationReq {
     @Expose()
+    @IsNumber()
     @IsOptional()
-    branchId?: string
+    productId?: number
 
     @Expose()
     @IsOptional()
-    searchAddress?: string
+    searchName?: string
+
+    @Expose()
+    @IsOptional()
+    unit?: string
 
     @Expose()
     @IsIn([DBType.HCM, DBType.HN])
     dbType: DBType
 }
 
-export class BranchFilter {
+export class ProductFilter {
     @Expose()
-    branchId?: string
+    productId?: number
 
     @Expose()
     @Transform((source) => {
         const data = source.obj
 
-        if (data.searchAddress) {
-            return Like(data.searchAddress + '%')
+        if (data.searchName) {
+            return Like(data.searchName + '%')
         }
 
-        return name
+        return data.name
     })
-    address?: FindOperator<string>
+    name?: FindOperator<string>
 }

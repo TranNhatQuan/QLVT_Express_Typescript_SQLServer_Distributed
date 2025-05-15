@@ -10,6 +10,7 @@ export class Product extends AppBaseEntity {
         type: 'varchar',
         nullable: false,
         length: 50,
+        unique: true,
     })
     name: string
 

@@ -1,29 +1,29 @@
 import { Expose, plainToInstance } from 'class-transformer'
-import { IsNotEmpty, IsOptional, MaxLength } from 'class-validator'
+import { IsNumber, IsOptional, MaxLength } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { removeUndefinedFields } from '../../../utils'
 
-export class UpdateBranchRequest extends BasePaginationReq {
+export class UpdateProductRequest extends BasePaginationReq {
     @Expose()
-    @IsNotEmpty()
-    branchId: string
+    @IsNumber()
+    productId: string
 
     @Expose()
     @MaxLength(50)
     @IsOptional()
-    name: string
+    name?: string
 
     @Expose()
-    @MaxLength(255)
+    @MaxLength(50)
     @IsOptional()
-    address: string
+    unit?: string
 
     userAction?: UserDTO
 
     getDataUpdate() {
         const data = removeUndefinedFields(
-            plainToInstance(UpdateBranchDTO, this, {
+            plainToInstance(UpdateProductDTO, this, {
                 excludeExtraneousValues: true,
             })
         )
@@ -34,12 +34,12 @@ export class UpdateBranchRequest extends BasePaginationReq {
     }
 }
 
-export class UpdateBranchDTO {
+export class UpdateProductDTO {
     @Expose()
     name?: string
 
     @Expose()
-    address?: string
+    unit?: string
 
     @Expose()
     updatedBy?: string

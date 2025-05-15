@@ -4,18 +4,14 @@ import { UserDTO } from '../../user/dtos/user.dto'
 
 export class CreateProductRequest {
     @Expose()
-    @IsNotEmpty()
-    branchId: string
-
-    @Expose()
     @MaxLength(50)
     @IsNotEmpty()
     name: string
 
     @Expose()
-    @MaxLength(255)
+    @MaxLength(50)
     @IsNotEmpty()
-    address: string
+    unit: string
 
     userAction?: UserDTO
 }
