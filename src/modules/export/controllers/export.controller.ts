@@ -20,10 +20,10 @@ import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddlewa
 import { BranchService } from '../services/export.service'
 
 @Service()
-@JsonController('/v1/branchs')
+@JsonController('/v1/exports')
 @UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
-export class BranchController {
+export class ExportController {
     constructor(@Inject() public branchService: BranchService) {}
 
     @Get('/')

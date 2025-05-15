@@ -4,14 +4,14 @@ import { Errors } from '../../../utils/error'
 import {
     BranchFilter,
     GetListBranchRequest,
-} from '../requests/get-list-branch.request'
+} from '../requests/get-list-product.request'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-branch.request'
+import { CreateBranchRequest } from '../requests/create-product.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
-import { UpdateBranchRequest } from '../requests/update-branch.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
+import { UpdateBranchRequest } from '../requests/update-product.request'
+import { DeleteBranchRequest } from '../requests/delete-product.request'
 
 @Service()
 export class BranchService {
