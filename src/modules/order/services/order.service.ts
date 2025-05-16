@@ -254,41 +254,41 @@ export class OrderService {
         )
     }
 
-    async cancelOrder(orderId: string, userAction: UserDTO) {
-        userAction.loadOrginDBType()
+    // async cancelOrder(orderId: string, userAction: UserDTO) {
+    //     userAction.loadOrginDBType()
 
-        return await startTransaction(
-            DBTypeMapping[userAction.originDBType],
-            async (manager) => {
-                const order = await manager.findOne(Order, {
-                    where: { orderId },
-                })
+    //     return await startTransaction(
+    //         DBTypeMapping[userAction.originDBType],
+    //         async (manager) => {
+    //             const order = await manager.findOne(Order, {
+    //                 where: { orderId },
+    //             })
 
-                this.checkStatus(order)
+    //             this.checkStatus(order)
 
-                if (
-                    order.status == OrderStatus.Completed ||
-                    order.status == OrderStatus.Canceled ||
-                    order.type == OrderType.Transfer
-                ) {
-                    throw Errors.InvalidData
-                }
-                //TODO: check if order is in progress
+    //             if (
+    //                 order.status == OrderStatus.Completed ||
+    //                 order.status == OrderStatus.Canceled ||
+    //                 order.type == OrderType.Transfer
+    //             ) {
+    //                 throw Errors.InvalidData
+    //             }
+    //             //TODO: check if order is in progress
 
-                const warehouseId =
-                    order.sourceWarehouseId ?? order.destinationWarehouseId
+    //             const warehouseId =
+    //                 order.sourceWarehouseId ?? order.destinationWarehouseId
 
-                //TODO: check order done
+    //             //TODO: check order done
 
-                await this.checkUserAction(userAction, order, manager)
+    //             await this.checkUserAction(userAction, order, manager)
 
-                order.status = OrderStatus.Canceled
-                order.updatedBy = userAction.userId
+    //             order.status = OrderStatus.Canceled
+    //             order.updatedBy = userAction.userId
 
-                await manager.save(Order, order)
-            }
-        )
-    }
+    //             await manager.save(Order, order)
+    //         }
+    //     )
+    // }
 
     async completeOrder(orderId: string, userAction: UserDTO) {
         userAction.loadOrginDBType()
@@ -302,10 +302,24 @@ export class OrderService {
 
                 if (
                     order.status == OrderStatus.Completed ||
-                    order.status == OrderStatus.Canceled ||
-                    order.type == OrderType.Transfer
+                    order.status == OrderStatus.Canceled
                 ) {
                     throw Errors.InvalidData
+                }
+
+                if (order.type == OrderType.Export && !order.exportDone) {
+                    throw Errors.OrderExportNotCompleted
+                }
+
+                if (order.type == OrderType.Import && !order.importDone) {
+                    throw Errors.OrderImportNotCompleted
+                }
+
+                if (
+                    order.type == OrderType.Transfer &&
+                    !(order.importDone && order.exportDone)
+                ) {
+                    throw Errors.OrderTransferNotCompleted
                 }
 
                 await this.checkUserAction(userAction, order, manager)

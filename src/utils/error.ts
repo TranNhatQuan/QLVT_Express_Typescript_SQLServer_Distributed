@@ -72,6 +72,18 @@ export const Errors = {
         'Customer not found'
     ),
     OrderNotFound: new ErrorResp('error.orderNotFound', 'Order not found'),
+    OrderImportNotCompleted: new ErrorResp(
+        'error.orderImportNotCompleted',
+        'Order has not been fully imported yet'
+    ),
+    OrderExportNotCompleted: new ErrorResp(
+        'error.orderExportNotCompleted',
+        'Order has not been fully exported yet'
+    ),
+    OrderTransferNotCompleted: new ErrorResp(
+        'error.orderImportNotCompleted',
+        'Order has not been fully transfer yet'
+    ),
     ImportNotFound: new ErrorResp('error.importNotFound', 'Import not found'),
     ProductNotFound: new ErrorResp(
         'error.productNotFound',

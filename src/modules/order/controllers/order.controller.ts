@@ -18,6 +18,9 @@ import { OrderService } from '../services/order.service'
 import { GetListOrderRequest } from '../requests/get-list-order.request'
 import { CreateOrderRequest } from '../requests/create-order.request'
 import { UserDTO } from '../../user/dtos/user.dto'
+import { GetOrderRequest } from '../requests/get-order.request'
+import { AssignReqParamsToQueryMiddleware } from '../../../middlewares/AssignReqParamsToQueryMiddleware'
+import { DBTypeMapping } from '../../../configs/types/application-constants.type'
 
 @Service()
 @JsonController('/v1/orders')
@@ -38,6 +41,18 @@ export class OrderController {
     ) {
         const result = await this.orderService.getOrders(data)
         return new ResponseWrapper(result, null, data.pagination)
+    }
+
+    @Get('/:orderId')
+    @UseBefore(AssignReqParamsToQueryMiddleware)
+    async getOrderById(@QueryParams() data: GetOrderRequest) {
+        const manager = DBTypeMapping[data.dbType].manager
+
+        const result = await this.orderService.getOrderDetail(
+            data.orderId,
+            manager
+        )
+        return new ResponseWrapper(result)
     }
 
     @Post('/')
@@ -66,14 +81,14 @@ export class OrderController {
         return new ResponseWrapper(true)
     }
 
-    @Put('/:orderId/cancel')
-    async cancelOrder(
-        @Param('orderId') orderId: string,
-        @CurrentUser({ required: true }) user: UserDTO
-    ) {
-        await this.orderService.cancelOrder(orderId, user)
-        return new ResponseWrapper(true)
-    }
+    // @Put('/:orderId/cancel')
+    // async cancelOrder(
+    //     @Param('orderId') orderId: string,
+    //     @CurrentUser({ required: true }) user: UserDTO
+    // ) {
+    //     await this.orderService.cancelOrder(orderId, user)
+    //     return new ResponseWrapper(true)
+    // }
 
     @Put('/:orderId/complete')
     async completeOrder(
