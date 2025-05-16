@@ -8,7 +8,7 @@ import {
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-branch.request'
+import { CreateBranchRequest } from '../requests/create-import.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
 import { UpdateBranchRequest } from '../requests/update-branch.request'
 import { DeleteBranchRequest } from '../requests/delete-branch.request'
