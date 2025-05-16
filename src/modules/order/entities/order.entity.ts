@@ -18,7 +18,7 @@ export class Order extends AppBaseEntity {
     @Column({
         type: 'varchar',
         nullable: false,
-        default: OrderStatus.Pending,
+        default: OrderStatus.Init,
     })
     status: OrderStatus
 

@@ -146,18 +146,4 @@ export class CreateOrderRequest {
             await this.validateOrderDetail(detail, manager)
         }
     }
-
-    getDataSource() {
-        if (this.type !== OrderType.Transfer) {
-            return this.dbType
-        }
-
-        if (
-            this.sourceWarehouse.branchId !== this.destinationWarehouse.branchId
-        ) {
-            return DBType.MASTER
-        }
-
-        return this.dbType
-    }
 }

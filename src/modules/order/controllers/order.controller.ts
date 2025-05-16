@@ -74,4 +74,13 @@ export class OrderController {
         await this.orderService.cancelOrder(orderId, user)
         return new ResponseWrapper(true)
     }
+
+    @Put('/:orderId/complete')
+    async completeOrder(
+        @Param('orderId') orderId: string,
+        @CurrentUser({ required: true }) user: UserDTO
+    ) {
+        await this.orderService.completeOrder(orderId, user)
+        return new ResponseWrapper(true)
+    }
 }
