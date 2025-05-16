@@ -70,7 +70,6 @@ export class CustomerController {
     }
 
     @Delete('/:customerId/delete')
-    @UseBefore(AssignReqParamsToBodyMiddleware)
     async deleteCustomer(@Param('customerId') customerId: string) {
         await this.customerService.deleteCustomer(Number(customerId))
         return new ResponseWrapper(true)

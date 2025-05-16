@@ -14,6 +14,8 @@ import { OrderDetail } from '../entities/order-detail.entity'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { UserRole } from '../../user/types/role.type'
 import { User } from '../../user/entities/user.entity'
+import { OrderStatus } from '../types/order-status.type'
+import { EntityManager } from 'typeorm'
 
 @Service()
 export class OrderService {
@@ -101,20 +103,85 @@ export class OrderService {
 
                 this.checkStatus(order)
 
-                const user = await manager.findOne(User, {
-                    where: { userId: order.userId },
-                })
-
-                if (
-                    order.createdBy !== userAction.userId ||
-                    userAction.role === UserRole.Staff ||
-                    (userAction.role === UserRole.BranchManager &&
-                        userAction.branchId !== user.branchId)
-                )
-                    throw Errors.Forbidden
+                await this.checkUserAction(userAction, order, manager)
 
                 await manager.softDelete(Order, { orderId })
             }
         )
+    }
+
+    async cancelOrder(orderId: string, userAction: UserDTO) {
+        return await startTransaction(
+            AppDataSources.master,
+            async (manager) => {
+                const order = await manager.findOne(Order, {
+                    where: { orderId },
+                })
+
+                this.checkStatus(order)
+
+                if (
+                    order.status == OrderStatus.Completed ||
+                    order.status == OrderStatus.Canceled
+                ) {
+                    throw Errors.InvalidData
+                }
+                //TODO: check if order is in progress
+
+                await this.checkUserAction(userAction, order, manager)
+
+                order.status = OrderStatus.Canceled
+                order.updatedBy = userAction.userId
+
+                await manager.save(Order, order)
+            }
+        )
+    }
+
+    async completeOrder(orderId: string, userAction: UserDTO) {
+        return await startTransaction(
+            AppDataSources.master,
+            async (manager) => {
+                const order = await manager.findOne(Order, {
+                    where: { orderId },
+                })
+
+                this.checkStatus(order)
+
+                if (
+                    order.status == OrderStatus.Completed ||
+                    order.status == OrderStatus.Canceled
+                ) {
+                    throw Errors.InvalidData
+                }
+                //TODO: check if order is in progress
+
+                await this.checkUserAction(userAction, order, manager)
+
+                order.status = OrderStatus.Completed
+                order.updatedBy = userAction.userId
+
+                await manager.save(Order, order)
+            }
+        )
+    }
+
+    async checkUserAction(
+        userAction: UserDTO,
+        order: Order,
+        manager: EntityManager
+    ) {
+        const user = await manager.findOne(User, {
+            where: { userId: order.userId },
+        })
+
+        if (
+            (order.createdBy !== userAction.userId &&
+                userAction.role === UserRole.Staff) ||
+            (userAction.role === UserRole.BranchManager &&
+                userAction.branchId !== user.branchId) ||
+            userAction.role !== UserRole.CompanyAdmin
+        )
+            throw Errors.Forbidden
     }
 }

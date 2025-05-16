@@ -1,8 +1,10 @@
 import {
     Body,
+    CurrentUser,
     Delete,
     Get,
     JsonController,
+    Param,
     Post,
     Put,
     QueryParams,
@@ -10,77 +12,66 @@ import {
 } from 'routing-controllers'
 import { Inject, Service } from 'typedi'
 import { ResponseWrapper } from '../../../utils/response'
-import { GetListBranchRequest } from '../requests/get-list-order.request'
-import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqParamsToBodyMiddleware'
-import { UpdateBranchRequest } from '../requests/update-order.request'
 import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTokenMiddleware'
-import { CreateBranchRequest } from '../requests/create-order.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
 import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
-import { BranchService } from '../services/order.service'
+import { OrderService } from '../services/order.service'
+import { GetListOrderRequest } from '../requests/get-list-order.request'
+import { CreateOrderRequest } from '../requests/create-order.request'
+import { UserDTO } from '../../user/dtos/user.dto'
 
 @Service()
-@JsonController('/v1/branchs')
+@JsonController('/v1/orders')
 @UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
-export class BranchController {
-    constructor(@Inject() public branchService: BranchService) {}
+export class OrderController {
+    constructor(@Inject() public orderService: OrderService) {}
 
     @Get('/')
-    async getListBranch(
+    async GetListOrder(
         @QueryParams({
             required: true,
             transform: {
                 excludeExtraneousValues: true,
             },
         })
-        data: GetListBranchRequest
+        data: GetListOrderRequest
     ) {
-        const result = await this.branchService.getBranchs(data)
+        const result = await this.orderService.getOrders(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
 
-    @Put('/:branchId/update')
-    @UseBefore(AssignReqParamsToBodyMiddleware)
-    async updateBranch(
-        @Body({
-            required: true,
-            transform: {
-                excludeExtraneousValues: true,
-            },
-        })
-        data: UpdateBranchRequest
-    ) {
-        const result = await this.branchService.updateBranch(data)
-        return new ResponseWrapper(result)
-    }
-
     @Post('/')
-    async createBranch(
+    async createOrder(
         @Body({
             required: true,
             transform: {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateBranchRequest
+        data: CreateOrderRequest,
+        @CurrentUser({ required: true }) user: UserDTO
     ) {
-        const result = await this.branchService.createBranch(data)
+        data.userAction = user
+
+        const result = await this.orderService.createOrder(data)
         return new ResponseWrapper(result)
     }
 
-    @Delete('/:branchId/delete')
-    @UseBefore(AssignReqParamsToBodyMiddleware)
+    @Delete('/:orderId/delete')
     async deleteBranch(
-        @Body({
-            required: true,
-            transform: {
-                excludeExtraneousValues: true,
-            },
-        })
-        data: DeleteBranchRequest
+        @Param('orderId') orderId: string,
+        @CurrentUser({ required: true }) user: UserDTO
     ) {
-        await this.branchService.deleteBranch(data)
+        await this.orderService.deleteOrder(orderId, user)
+        return new ResponseWrapper(true)
+    }
+
+    @Put('/:orderId/cancel')
+    async cancelOrder(
+        @Param('orderId') orderId: string,
+        @CurrentUser({ required: true }) user: UserDTO
+    ) {
+        await this.orderService.cancelOrder(orderId, user)
         return new ResponseWrapper(true)
     }
 }
