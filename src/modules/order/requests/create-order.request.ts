@@ -142,6 +142,13 @@ export class CreateOrderRequest {
             }
         }
 
+        if (
+            this.type === OrderType.Transfer &&
+            this.sourceWarehouse.branchId !== this.destinationWarehouse.branchId
+        ) {
+            throw Errors.NotSupportedFeature
+        }
+
         for (const detail of this.details) {
             await this.validateOrderDetail(detail, manager)
         }

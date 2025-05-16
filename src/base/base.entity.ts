@@ -13,11 +13,11 @@ export class AppBaseEntity extends BaseEntity {
     updatedTime: Date
 
     @Expose()
-    @Column({ type: 'varchar', length: 255, nullable: true, default: '0' })
+    @Column({ type: 'varchar', length: 255, default: '0' })
     createdBy: string
 
     @Expose()
-    @Column({ type: 'varchar', length: 255, nullable: true, default: '0' })
+    @Column({ type: 'varchar', length: 255, default: '0' })
     updatedBy: string
 
     @DeleteDateColumn()
