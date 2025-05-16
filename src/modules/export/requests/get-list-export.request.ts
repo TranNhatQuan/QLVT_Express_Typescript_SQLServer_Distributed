@@ -1,43 +1,20 @@
 import { Expose } from 'class-transformer'
-import { IsEnum, IsIn, IsNumber, IsOptional } from 'class-validator'
+import { IsIn, IsNumber, IsOptional } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { DBType } from '../../../configs/types/application-constants.type'
-import { OrderType } from '../types/order.type'
-import { OrderStatus } from '../types/order-status.type'
-
-export class GetListOrderRequest extends BasePaginationReq {
+export class GetListImportRequest extends BasePaginationReq {
     @Expose()
     @IsOptional()
     orderId?: string
 
     @Expose()
     @IsOptional()
-    @IsEnum(OrderType)
-    type?: OrderType
+    importId?: string
 
     @Expose()
     @IsOptional()
-    @IsEnum(OrderStatus)
-    status?: OrderStatus
-
-    @Expose()
-    @IsOptional()
-    userId?: string
-
-    @Expose()
     @IsNumber()
-    @IsOptional()
-    sourceWarehouseId?: number
-
-    @Expose()
-    @IsNumber()
-    @IsOptional()
-    destinationWarehouseId?: number
-
-    @Expose()
-    @IsNumber()
-    @IsOptional()
-    customerId?: number
+    productId?: number
 
     @Expose()
     @IsOptional()
@@ -48,25 +25,10 @@ export class GetListOrderRequest extends BasePaginationReq {
     dbType: DBType
 }
 
-export class OrderFilter {
+export class ImportFilter {
     @Expose()
     orderId?: string
 
     @Expose()
-    type?: OrderType
-
-    @Expose()
-    status?: OrderStatus
-
-    @Expose()
-    userId?: string
-
-    @Expose()
-    sourceWarehouseId?: number
-
-    @Expose()
-    destinationWarehouseId?: number
-
-    @Expose()
-    customerId?: number
+    importId?: string
 }
