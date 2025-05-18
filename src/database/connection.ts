@@ -18,6 +18,10 @@ export const AppDataSources = {
         maxQueryExecutionTime: 10000,
         logging: false,
         synchronize: false,
+        options: {
+            encrypt: false,
+            trustServerCertificate: true,
+        },
     }),
     shardUser: new DataSource({
         type: 'mssql',
@@ -33,6 +37,10 @@ export const AppDataSources = {
         maxQueryExecutionTime: 10000,
         logging: false,
         synchronize: false,
+        options: {
+            encrypt: false,
+            trustServerCertificate: true,
+        },
     }),
     shardHCM: new DataSource({
         type: 'mssql',
@@ -48,6 +56,10 @@ export const AppDataSources = {
         maxQueryExecutionTime: 10000,
         logging: false,
         synchronize: false,
+        options: {
+            encrypt: false,
+            trustServerCertificate: true,
+        },
     }),
     shardHN: new DataSource({
         type: 'mssql',
@@ -63,6 +75,10 @@ export const AppDataSources = {
         maxQueryExecutionTime: 10000,
         logging: false,
         synchronize: false,
+        options: {
+            encrypt: false,
+            trustServerCertificate: true,
+        },
     }),
 }
 
