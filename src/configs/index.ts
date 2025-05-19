@@ -69,6 +69,9 @@ export class Config {
     @IsString()
     appName: string
 
+    @IsString()
+    saltPassword: string
+
     constructor() {
         const env = process.env
         this.nodeEnv = env.NODE_ENV
@@ -86,6 +89,7 @@ export class Config {
         this.beApiKey = env.BE_API_KEY
         this.feUrl = env.FE_URL
         this.appName = env.APP_NAME
+        this.saltPassword = env.SALT_PASSWORD
     }
 
     isProduction() {

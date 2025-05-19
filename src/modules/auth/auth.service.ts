@@ -6,15 +6,15 @@ import { EntityManager } from 'typeorm'
 import { CacheKeys, CacheManager } from '../../cache'
 import { Config } from '../../configs'
 import { Errors } from '../../utils/error'
+import { UserRole } from '../user/types/role.type'
 
 export const ACCESS_TOKEN_TYPE = 'access_token'
 export const REFRESH_TOKEN_TYPE = 'refresh_token'
 
 export class AuthPayload {
     userId: string
-    roleId: number
-    isVerified: boolean
-    isActive: boolean
+    role: UserRole
+    branchId?: string
     username?: string
 }
 
@@ -35,9 +35,9 @@ export class AuthService {
         @Inject() private cacheManager: CacheManager
     ) {}
 
-    async signToken(payload: AuthPayload, salt?: string) {
+    async signToken(payload: AuthPayload) {
         const { accessSecret, accessExpiresIn } = this.config.jwt
-        const jwtSecret = accessSecret + (salt ?? '')
+        const jwtSecret = accessSecret
         const sign = jwt.sign(payload, jwtSecret, {
             expiresIn: accessExpiresIn,
         })
@@ -51,9 +51,9 @@ export class AuthService {
         return this.generateAuthToken(sign)
     }
 
-    async signTokenLongTime(payload: AuthPayload, salt?: string) {
+    async signTokenLongTime(payload: AuthPayload) {
         const { accessSecret, accessExpiresLongTime } = this.config.jwt
-        const jwtSecret = accessSecret + (salt ?? '')
+        const jwtSecret = accessSecret
         const sign = jwt.sign(payload, jwtSecret, {
             expiresIn: accessExpiresLongTime,
         })
@@ -111,9 +111,9 @@ export class AuthService {
         return authPayload
     }
 
-    async signRefreshToken(payload: AuthPayload, salt?: string) {
+    async signRefreshToken(payload: AuthPayload) {
         const { refreshSecret, refreshExpiresIn } = this.config.jwt
-        const jwtSecret = refreshSecret + (salt ?? '')
+        const jwtSecret = refreshSecret
         const sign = jwt.sign(payload, jwtSecret, {
             expiresIn: refreshExpiresIn,
         })
@@ -179,18 +179,18 @@ export class AuthService {
         }
     }
 
-    async generateAuthTokenPairs(payload: AuthPayload, salt: string) {
+    async generateAuthTokenPairs(payload: AuthPayload) {
         const res = await Promise.all([
-            this.signToken(payload, salt),
-            this.signRefreshToken(payload, salt),
+            this.signToken(payload),
+            this.signRefreshToken(payload),
         ])
         return {
             accessToken: res[0],
             refreshToken: res[1],
         }
     }
-    async generateAccessTokenPairs(payload: AuthPayload, salt: string) {
-        const res = await this.signTokenLongTime(payload, salt)
+    async generateAccessTokenPairs(payload: AuthPayload) {
+        const res = await this.signTokenLongTime(payload)
         return { accessToken: res }
     }
 

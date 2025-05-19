@@ -1,4 +1,4 @@
-import { Service } from 'typedi'
+import { Inject, Service } from 'typedi'
 import { User } from '../entities/user.entity'
 import { Errors } from '../../../utils/error'
 import {
@@ -13,10 +13,14 @@ import { CreateUserRequest } from '../requests/create-user.request'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
 import { DeleteUserRequest } from '../requests/delete-user.request'
 import { SignInRequest } from '../requests/sign-in.request'
+import bcrypt from 'bcrypt'
+import { AuthService } from '../../auth/auth.service'
 
 @Service()
 export class UserService {
-    checkUserStatus(userEntity: User) {
+    constructor(@Inject() private authService: AuthService) {}
+
+    checkStatus(userEntity: User) {
         if (!userEntity) {
             throw Errors.UserNotFound
         }
@@ -32,6 +36,21 @@ export class UserService {
             .createQueryBuilder()
             .from(User, 'u')
             .where(removeUndefinedFields(filter))
+            .select([
+                'u.userId',
+                'u.username',
+                'u.name',
+                'u.role',
+                'u.branchId',
+                'u.address',
+                'u.phone',
+                'u.email',
+                'u.dob',
+                'u.createdTime',
+                'u.updatedTime',
+                'u.createdBy',
+                'u.updatedBy',
+            ])
 
         const countQuery = query.clone()
 
@@ -89,6 +108,30 @@ export class UserService {
     }
 
     async signIn(req: SignInRequest) {
-        //
+        const user = await DBTypeMapping[req.dbType]
+            .getRepository(User)
+            .findOne({
+                where: [{ username: req.username }],
+            })
+        this.checkStatus(user)
+
+        if (!bcrypt.compareSync(req.password, user.password)) {
+            throw Errors.InvalidAccount
+        }
+
+        const { accessToken, refreshToken } =
+            await this.authService.generateAuthTokenPairs({
+                userId: user.userId,
+                role: user.role,
+                branchId: user.branchId,
+            })
+
+        delete user.password
+
+        return {
+            user,
+            accessToken,
+            refreshToken,
+        }
     }
 }
