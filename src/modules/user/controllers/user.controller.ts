@@ -18,6 +18,7 @@ import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTo
 import { CreateUserRequest } from '../requests/create-user.request'
 import { DeleteUserRequest } from '../requests/delete-user.request'
 import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
+import { SignInRequest } from '../requests/sign-in.request'
 
 @Service()
 @JsonController('/v1/users')
@@ -67,6 +68,20 @@ export class UserController {
     ) {
         const result = await this.userService.createUser(data)
         return new ResponseWrapper(result, null, data.pagination)
+    }
+
+    @Post('/sign-in')
+    async signIn(
+        @Body({
+            required: true,
+            transform: {
+                excludeExtraneousValues: true,
+            },
+        })
+        data: SignInRequest
+    ) {
+        const result = await this.userService.signIn(data)
+        return new ResponseWrapper(result)
     }
 
     @Delete('/:userId/delete')

@@ -12,6 +12,7 @@ import { UpdateUserRequest } from '../requests/update-user.request'
 import { CreateUserRequest } from '../requests/create-user.request'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
 import { DeleteUserRequest } from '../requests/delete-user.request'
+import { SignInRequest } from '../requests/sign-in.request'
 
 @Service()
 export class UserService {
@@ -85,5 +86,9 @@ export class UserService {
                 await manager.softDelete(User, { userId: req.userId })
             }
         )
+    }
+
+    async signIn(req: SignInRequest) {
+        //
     }
 }
