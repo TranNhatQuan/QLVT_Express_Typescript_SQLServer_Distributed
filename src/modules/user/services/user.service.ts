@@ -18,10 +18,14 @@ import { DeleteUserRequest } from '../requests/delete-user.request'
 import { SignInRequest } from '../requests/sign-in.request'
 import bcrypt from 'bcrypt'
 import { AuthService } from '../../auth/auth.service'
+import { CacheKeys, CacheManager } from '../../../cache'
 
 @Service()
 export class UserService {
-    constructor(@Inject() private authService: AuthService) {}
+    constructor(
+        @Inject() private authService: AuthService,
+        @Inject() private cacheManager: CacheManager
+    ) {}
 
     checkStatus(userEntity: User) {
         if (!userEntity) {
@@ -100,14 +104,8 @@ export class UserService {
                 return userEntity
             }
         )
-        const { accessToken, refreshToken } =
-            await this.authService.generateAuthTokenPairs({
-                userId: user.userId,
-                role: user.role,
-                branchId: user.branchId,
-            })
 
-        return { user, accessToken, refreshToken }
+        return user
     }
 
     async deleteUser(req: DeleteUserRequest) {
@@ -116,6 +114,13 @@ export class UserService {
             async (manager) => {
                 await req.validateRequest(manager)
                 await manager.softDelete(User, { userId: req.userId })
+
+                const accessTokenKey = CacheKeys.accessToken(req.userId)
+                const refreshTokenKey = CacheKeys.refreshToken(req.userId)
+                await Promise.all([
+                    this.cacheManager.del(accessTokenKey),
+                    this.cacheManager.del(refreshTokenKey),
+                ])
             }
         )
     }
