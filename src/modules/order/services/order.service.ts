@@ -43,8 +43,7 @@ export class OrderService {
         const [orderEntity, importDetails, exportDetails] = await Promise.all([
             manager
                 .getRepository(Order)
-                .createQueryBuilder()
-                .from(Order, 'o')
+                .createQueryBuilder('o')
                 .where('o.orderId = :orderId', { orderId })
                 .leftJoin(OrderDetail, 'od', 'o.orderId = od.orderId')
                 .leftJoin(Product, 'p', 'od.productId = p.productId')
@@ -64,8 +63,7 @@ export class OrderService {
                 .getRawOne(),
             manager
                 .getRepository(ImportReceipt)
-                .createQueryBuilder()
-                .from(ImportReceipt, 'ir')
+                .createQueryBuilder('ir')
                 .leftJoin(
                     ImportReceiptDetail,
                     'ird',
@@ -85,8 +83,7 @@ export class OrderService {
                 .getRawMany(),
             manager
                 .getRepository(ExportReceipt)
-                .createQueryBuilder()
-                .from(ExportReceipt, 'ir')
+                .createQueryBuilder('ir')
                 .leftJoin(
                     ExportReceiptDetail,
                     'ird',
@@ -158,8 +155,7 @@ export class OrderService {
 
         const query = DBTypeMapping[req.dbType]
             .getRepository(Order)
-            .createQueryBuilder()
-            .from(Order, 'o')
+            .createQueryBuilder('o')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()

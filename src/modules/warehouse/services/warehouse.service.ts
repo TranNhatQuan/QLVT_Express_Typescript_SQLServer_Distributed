@@ -29,8 +29,7 @@ export class WarehouseService {
 
         const query = DBTypeMapping[req.dbType]
             .getRepository(Warehouse)
-            .createQueryBuilder()
-            .from(Warehouse, 'b')
+            .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()

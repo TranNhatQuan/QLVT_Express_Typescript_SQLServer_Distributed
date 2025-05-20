@@ -29,8 +29,7 @@ export class CustomerService {
 
         const query = DBTypeMapping[req.dbType]
             .getRepository(Customer)
-            .createQueryBuilder()
-            .from(Customer, 'b')
+            .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
 
         if (req.search) {

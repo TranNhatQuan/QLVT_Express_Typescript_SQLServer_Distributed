@@ -30,8 +30,7 @@ export class BranchService {
 
         const query = DBTypeMapping[req.dbType]
             .getRepository(Branch)
-            .createQueryBuilder()
-            .from(Branch, 'b')
+            .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()

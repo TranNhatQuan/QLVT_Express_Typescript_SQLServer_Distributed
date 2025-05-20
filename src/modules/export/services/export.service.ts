@@ -14,7 +14,7 @@ import { UpdateBranchRequest } from '../requests/update-branch.request'
 import { DeleteBranchRequest } from '../requests/delete-branch.request'
 
 @Service()
-export class BranchService {
+export class ExportService {
     checkBranchStatus(branchEntity: Branch) {
         if (!branchEntity) {
             throw Errors.BranchNotFound
@@ -30,8 +30,7 @@ export class BranchService {
 
         const query = DBTypeMapping[req.dbType]
             .getRepository(Branch)
-            .createQueryBuilder()
-            .from(Branch, 'b')
+            .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()

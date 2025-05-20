@@ -29,8 +29,7 @@ export class ProductService {
 
         const query = DBTypeMapping[req.dbType]
             .getRepository(Product)
-            .createQueryBuilder()
-            .from(Product, 'p')
+            .createQueryBuilder('p')
             .where(removeUndefinedFields(filter))
 
         const countQuery = query.clone()
