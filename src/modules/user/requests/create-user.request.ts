@@ -1,5 +1,6 @@
 import { Expose } from 'class-transformer'
 import {
+    IsDateString,
     IsEnum,
     IsIn,
     IsNotEmpty,
@@ -47,6 +48,10 @@ export class CreateUserRequest extends BasePaginationReq {
     @Expose()
     @IsOptional()
     email?: string
+
+    @Expose()
+    @IsDateString()
+    dob: Date
 
     @Expose()
     @IsIn([DBType.HCM, DBType.HN])

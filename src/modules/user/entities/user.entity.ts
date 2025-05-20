@@ -71,6 +71,17 @@ export class User extends AppBaseEntity {
     branchId: string
 
     genId() {
-        this.userId = 'NV' + new Date().getTime().toString() + randomUUID()
+        this.userId =
+            'NV' +
+            '-' +
+            this.branchId +
+            '-' +
+            new Date().getTime().toString() +
+            '-' +
+            randomUUID()
+    }
+
+    hideInfo() {
+        delete this.password
     }
 }

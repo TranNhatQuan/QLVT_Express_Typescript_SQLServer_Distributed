@@ -81,23 +81,36 @@ export class UserService {
     }
 
     async createUser(req: CreateUserRequest) {
-        return await startTransaction(
+        const user = await startTransaction(
             DBTypeMapping[req.dbType],
             async (manager) => {
+                await req.validateRequest()
+
+                req.password = bcrypt.hashSync(req.password, 10)
+
                 const userEntity = plainToInstance(User, req, {
                     excludeExtraneousValues: true,
                 })
-
-                await req.validateRequest()
 
                 userEntity.genId()
                 userEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 
                 await manager.insert(User, userEntity)
 
+                userEntity.hideInfo()
+
                 return userEntity
             }
         )
+        const { accessToken, refreshToken } =
+            await this.authService.generateAuthTokenPairs({
+                userId: user.userId,
+                role: user.role,
+                branchId: user.branchId,
+                username: user.username,
+            })
+
+        return { user, accessToken, refreshToken }
     }
 
     async deleteUser(req: DeleteUserRequest) {
