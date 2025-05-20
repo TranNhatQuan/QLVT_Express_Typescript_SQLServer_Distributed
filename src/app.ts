@@ -8,7 +8,6 @@ import {
     urlencoded,
 } from 'express'
 import expressBasicAuth from 'express-basic-auth'
-import morgan from 'morgan'
 import 'reflect-metadata'
 import Container from 'typedi'
 import { Config, validateEnv } from './configs'
@@ -129,7 +128,6 @@ export class App {
         this.app.use(
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (err: Error, req: Request, res: Response, next: NextFunction) => {
-                console.log(req.body)
                 handleError(err, res)
             }
         )

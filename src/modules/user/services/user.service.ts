@@ -92,7 +92,7 @@ export class UserService {
                     excludeExtraneousValues: true,
                 })
 
-                userEntity.genId()
+                await userEntity.genId(manager)
                 userEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 
                 await manager.insert(User, userEntity)
@@ -107,7 +107,6 @@ export class UserService {
                 userId: user.userId,
                 role: user.role,
                 branchId: user.branchId,
-                username: user.username,
             })
 
         return { user, accessToken, refreshToken }
@@ -127,7 +126,7 @@ export class UserService {
         const user = await DBTypeMapping[DBType.USER]
             .getRepository(User)
             .findOne({
-                where: [{ username: req.username }],
+                where: [{ userId: req.userId }],
             })
         this.checkStatus(user)
 

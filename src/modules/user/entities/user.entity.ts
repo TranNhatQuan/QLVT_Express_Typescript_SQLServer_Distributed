@@ -1,18 +1,14 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm'
+import { Column, Entity, EntityManager, PrimaryColumn } from 'typeorm'
 import { AppBaseEntity } from '../../../base/base.entity'
 import { UserRole } from '../types/role.type'
-import { randomUUID } from 'crypto'
 import { Expose } from 'class-transformer'
+import { UserIdentity } from './user-identity.entity'
 
 @Entity('User')
 export class User extends AppBaseEntity {
     @Expose()
     @PrimaryColumn({ type: 'varchar', nullable: false, length: 255 })
     userId: string
-
-    @Expose()
-    @Column({ type: 'varchar', length: 255, unique: true })
-    username: string
 
     @Expose()
     @Column({ type: 'varchar', length: 255 })
@@ -70,15 +66,15 @@ export class User extends AppBaseEntity {
     })
     branchId: string
 
-    genId() {
-        this.userId =
-            'NV' +
-            '-' +
-            this.branchId +
-            '-' +
-            new Date().getTime().toString() +
-            '-' +
-            randomUUID()
+    async genId(manager: EntityManager) {
+        const userIdentity = new UserIdentity()
+        userIdentity.branchId = this.branchId
+
+        await userIdentity.getForUpdate(manager)
+
+        this.userId = this.branchId + '-' + userIdentity.num.toString()
+
+        await userIdentity.increaseIdentity(manager)
     }
 
     hideInfo() {

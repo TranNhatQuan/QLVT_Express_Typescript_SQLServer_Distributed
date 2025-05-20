@@ -25,10 +25,6 @@ export class CreateUserRequest extends BasePaginationReq {
 
     @Expose()
     @IsNotEmpty()
-    username: string
-
-    @Expose()
-    @IsNotEmpty()
     @MinLength(8)
     @MaxLength(20)
     password: string

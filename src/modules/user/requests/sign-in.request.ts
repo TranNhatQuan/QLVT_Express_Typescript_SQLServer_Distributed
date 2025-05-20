@@ -6,7 +6,7 @@ export class SignInRequest {
     @IsString()
     @IsNotEmpty()
     @MaxLength(255)
-    username: string
+    userId: string
 
     @Expose()
     @IsString()
