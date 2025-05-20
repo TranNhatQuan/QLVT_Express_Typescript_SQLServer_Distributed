@@ -1,8 +1,6 @@
-import bcrypt from 'bcrypt'
 import { instanceToPlain, plainToInstance } from 'class-transformer'
 import jwt, { JsonWebTokenError, JwtPayload } from 'jsonwebtoken'
 import { Inject, Service } from 'typedi'
-import { EntityManager } from 'typeorm'
 import { CacheKeys, CacheManager } from '../../cache'
 import { Config } from '../../configs'
 import { Errors } from '../../utils/error'
@@ -43,25 +41,9 @@ export class AuthService {
         })
 
         await this.cacheManager.set(
-            CacheKeys.accessToken(payload.userId, sign),
-            Date.now().toString(),
+            CacheKeys.accessToken(payload.userId),
+            sign,
             accessExpiresIn
-        )
-
-        return this.generateAuthToken(sign)
-    }
-
-    async signTokenLongTime(payload: AuthPayload) {
-        const { accessSecret, accessExpiresLongTime } = this.config.jwt
-        const jwtSecret = accessSecret
-        const sign = jwt.sign(payload, jwtSecret, {
-            expiresIn: accessExpiresLongTime,
-        })
-
-        await this.cacheManager.set(
-            CacheKeys.accessToken(payload.userId, sign),
-            Date.now().toString(),
-            accessExpiresLongTime
         )
 
         return this.generateAuthToken(sign)
@@ -78,33 +60,22 @@ export class AuthService {
 
         const plainPayload = instanceToPlain(decoded.payload)
         const authPayload = plainToInstance(AuthPayload, plainPayload)
-        //const user = await UserRepos.getProfile(authPayload.userId);
-        //UserRepos.checkStatus(user);
-        //authPayload.username = user.username;
 
-        // if (
-        //   //user.allTokenExpiredAt &&
-        //   plainPayload.iat * 1000 <=
-        //   +new Date(user.allTokenExpiredAt)
-        // ) {
-        //   throw Errors.Unauthorized;
-        // }
+        const jwtSecret =
+            this.config.jwt.accessSecret + this.config.saltPassword
+        try {
+            jwt.verify(token, jwtSecret)
+        } catch (err) {
+            if (err instanceof JsonWebTokenError) {
+                throw Errors.Unauthorized
+            }
+            throw err
+        }
 
-        // const jwtSecret = this.config.jwt.accessSecret + user.salt;
+        const cacheKey = CacheKeys.accessToken(authPayload.userId)
+        const key = await this.cacheManager.get(cacheKey)
 
-        // try {
-        //   jwt.verify(token, jwtSecret);
-        // } catch (err) {
-        //   if (err instanceof JsonWebTokenError) {
-        //     throw Errors.Unauthorized;
-        //   }
-        //   throw err;
-        // }
-
-        const cacheKey = CacheKeys.accessToken(authPayload.userId, token)
-        const isTokenExisted = await this.cacheManager.exist(cacheKey)
-
-        if (!isTokenExisted) {
+        if (!key && key !== token) {
             throw Errors.Unauthorized
         }
 
@@ -119,8 +90,8 @@ export class AuthService {
         })
 
         await this.cacheManager.set(
-            CacheKeys.refreshToken(payload.userId, sign),
-            Date.now().toString(),
+            CacheKeys.refreshToken(payload.userId),
+            sign,
             refreshExpiresIn
         )
 
@@ -138,32 +109,23 @@ export class AuthService {
 
         const plainPayload = instanceToPlain(decoded.payload)
         const authPayload = plainToInstance(AuthPayload, plainPayload)
-        //const user = await UserRepos.getProfile(authPayload.userId);
 
-        //UserRepos.checkStatus(user);
+        const jwtSecret =
+            this.config.jwt.refreshSecret + this.config.saltPassword
 
-        // if (
-        //   user.allTokenExpiredAt &&
-        //   plainPayload.exp * 1000 <= +new Date(user.allTokenExpiredAt)
-        // ) {
-        //   throw Errors.Unauthorized;
-        // }
+        try {
+            jwt.verify(token, jwtSecret)
+        } catch (err) {
+            if (err instanceof JsonWebTokenError) {
+                throw Errors.Unauthorized
+            }
+            throw err
+        }
 
-        // const jwtSecret = this.config.jwt.refreshSecret + user.salt;
+        const cacheKey = CacheKeys.refreshToken(authPayload.userId)
+        const key = await this.cacheManager.get(cacheKey)
 
-        // try {
-        //   jwt.verify(token, jwtSecret);
-        // } catch (err) {
-        //   if (err instanceof JsonWebTokenError) {
-        //     throw Errors.Unauthorized;
-        //   }
-        //   throw err;
-        // }
-
-        const cacheKey = CacheKeys.refreshToken(authPayload.userId, token)
-        const isTokenExisted = await this.cacheManager.exist(cacheKey)
-
-        if (!isTokenExisted) {
+        if (!key && key !== token) {
             throw Errors.Unauthorized
         }
 
@@ -188,31 +150,6 @@ export class AuthService {
             accessToken: res[0],
             refreshToken: res[1],
         }
-    }
-    async generateAccessTokenPairs(payload: AuthPayload) {
-        const res = await this.signTokenLongTime(payload)
-        return { accessToken: res }
-    }
-
-    async verifyUserPassword(
-        userId: string,
-        password: string,
-        manager: EntityManager,
-        onlyCheckExist = false,
-        errOnFail = Errors.SelfActionPasswordIncorrect
-    ) {
-        if (!password?.length) {
-            throw errOnFail
-        }
-
-        //const user = await manager.withRepository(UserRepos).findOneById(userId);
-        //UserRepos.checkStatus(user, onlyCheckExist);
-
-        // const isValidPassword = await bcrypt.compare(password, user.password);
-
-        // if (!isValidPassword) {
-        //   throw errOnFail;
-        // }
     }
 
     getPayloadFromJwt(token: string) {

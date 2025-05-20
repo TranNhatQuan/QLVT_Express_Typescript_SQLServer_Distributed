@@ -4,11 +4,9 @@ import { Inject, Service } from 'typedi'
 import { Config } from '../configs'
 
 export const CacheKeys = {
-    accessToken: (userId: string, token: string) =>
-        `access-token:${userId}:${token}`,
+    accessToken: (userId: string) => `access-token:${userId}`,
 
-    refreshToken: (userId: string, token: string) =>
-        `refresh-token:${userId}:${token}`,
+    refreshToken: (userId: string) => `refresh-token:${userId}`,
 
     user: (userId: string) => `user:${userId}`,
 
