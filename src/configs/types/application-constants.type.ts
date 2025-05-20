@@ -2,8 +2,8 @@ import { DataSource } from 'typeorm'
 import { AppDataSources } from '../../database/connection'
 
 export enum DBType {
-    HCM = 'CN-HCM',
-    HN = 'CN-HN',
+    HCM = 'HCM',
+    HN = 'HN',
     USER = 'USER',
     MASTER = 'MASTER',
 }

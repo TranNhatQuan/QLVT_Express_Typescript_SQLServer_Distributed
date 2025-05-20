@@ -1,6 +1,5 @@
 import { Expose } from 'class-transformer'
-import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator'
-import { DBType } from '../../../configs/types/application-constants.type'
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator'
 
 export class SignInRequest {
     @Expose()
@@ -14,8 +13,4 @@ export class SignInRequest {
     @IsNotEmpty()
     @MaxLength(255)
     password: string
-
-    @Expose()
-    @IsIn([DBType.HCM, DBType.HN])
-    dbType: DBType
 }

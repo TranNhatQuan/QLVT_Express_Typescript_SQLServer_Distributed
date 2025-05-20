@@ -2,7 +2,6 @@ import * as express from 'express'
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers'
 import { Service } from 'typedi'
 import { Errors } from '../utils/error'
-import { UserDTO } from '../modules/user/dtos/user.dto'
 import { DBType } from '../configs/types/application-constants.type'
 import { UserRole } from '../modules/user/types/role.type'
 
@@ -14,15 +13,15 @@ export class CheckDBSelectionMiddleware implements ExpressMiddlewareInterface {
         res: express.Response,
         next: express.NextFunction
     ) {
-        const userDTO: UserDTO = req['userAction']
-        userDTO.loadOrginDBType()
+        req['userAction'].loadOrginDBType()
+
         const dbType: DBType = req['dbType']
 
         if (
             dbType &&
             dbType != DBType.USER &&
-            dbType != userDTO.originDBType &&
-            userDTO.role != UserRole.CompanyAdmin
+            dbType != req['userAction'].originDBType &&
+            req['userAction'].role != UserRole.CompanyAdmin
         ) {
             throw Errors.Forbidden
         }

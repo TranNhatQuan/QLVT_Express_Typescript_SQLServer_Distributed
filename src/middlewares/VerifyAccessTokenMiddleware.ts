@@ -28,12 +28,13 @@ export class VerifyAccessTokenMiddleware implements ExpressMiddlewareInterface {
 
         const payload = await this.authService.verifyToken(token)
 
-        const user = AppDataSources.shardUser
+        const user = await AppDataSources.shardUser
             .createQueryBuilder()
             .from(User, 'u')
             .where({
                 userId: payload.userId,
             })
+            .getRawOne()
 
         _.assign(req, {
             userId: payload.userId,
@@ -44,6 +45,8 @@ export class VerifyAccessTokenMiddleware implements ExpressMiddlewareInterface {
                 excludeExtraneousValues: true,
             }),
         })
+
+        req.body['userAction'] = req['userAction']
 
         return next()
     }

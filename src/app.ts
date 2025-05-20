@@ -72,19 +72,6 @@ export class App {
         // this.app.use(json())
         this.app.use(urlencoded({ extended: true }))
 
-        // http request logger
-        this.app.use(
-            morgan('short', {
-                skip: (req) => {
-                    return (
-                        req.url.startsWith('/api/queues') ||
-                        req.url.startsWith('/admin/queues') ||
-                        req.url.startsWith('/healthcheck')
-                    )
-                },
-            })
-        )
-
         //promClient.collectDefaultMetrics()
         const requestDuration = new promClient.Histogram({
             name: 'http_request_duration_ms',
@@ -142,6 +129,7 @@ export class App {
         this.app.use(
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (err: Error, req: Request, res: Response, next: NextFunction) => {
+                console.log(req.body)
                 handleError(err, res)
             }
         )

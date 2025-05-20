@@ -22,12 +22,12 @@ import { SignInRequest } from '../requests/sign-in.request'
 
 @Service()
 @JsonController('/v1/users')
-@UseBefore(VerifyAccessTokenMiddleware)
-@UseBefore(CheckDBSelectionMiddleware)
 export class UserController {
     constructor(@Inject() public userService: UserService) {}
 
     @Get('/')
+    @UseBefore(CheckDBSelectionMiddleware)
+    @UseBefore(VerifyAccessTokenMiddleware)
     async getListUser(
         @QueryParams({
             required: true,
@@ -42,6 +42,8 @@ export class UserController {
     }
 
     @Put('/:userId/update')
+    @UseBefore(CheckDBSelectionMiddleware)
+    @UseBefore(VerifyAccessTokenMiddleware)
     @UseBefore(AssignReqParamsToBodyMiddleware)
     async updateUser(
         @Body({
@@ -57,12 +59,11 @@ export class UserController {
     }
 
     @Post('/')
+    @UseBefore(CheckDBSelectionMiddleware)
+    @UseBefore(VerifyAccessTokenMiddleware)
     async createUser(
         @Body({
             required: true,
-            transform: {
-                excludeExtraneousValues: true,
-            },
         })
         data: CreateUserRequest
     ) {
@@ -85,6 +86,8 @@ export class UserController {
     }
 
     @Delete('/:userId/delete')
+    @UseBefore(CheckDBSelectionMiddleware)
+    @UseBefore(VerifyAccessTokenMiddleware)
     @UseBefore(AssignReqParamsToBodyMiddleware)
     async deleteUser(
         @Body({

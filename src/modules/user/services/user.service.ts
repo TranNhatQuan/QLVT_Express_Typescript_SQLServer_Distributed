@@ -10,7 +10,10 @@ import { AppDataSources, startTransaction } from '../../../database/connection'
 import { removeUndefinedFields } from '../../../utils'
 import { UpdateUserRequest } from '../requests/update-user.request'
 import { CreateUserRequest } from '../requests/create-user.request'
-import { DBTypeMapping } from '../../../configs/types/application-constants.type'
+import {
+    DBType,
+    DBTypeMapping,
+} from '../../../configs/types/application-constants.type'
 import { DeleteUserRequest } from '../requests/delete-user.request'
 import { SignInRequest } from '../requests/sign-in.request'
 import bcrypt from 'bcrypt'
@@ -108,7 +111,7 @@ export class UserService {
     }
 
     async signIn(req: SignInRequest) {
-        const user = await DBTypeMapping[req.dbType]
+        const user = await DBTypeMapping[DBType.USER]
             .getRepository(User)
             .findOne({
                 where: [{ username: req.username }],
