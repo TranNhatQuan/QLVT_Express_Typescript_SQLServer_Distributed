@@ -39,7 +39,7 @@ export class ProductService {
             query
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
-                .orderBy('p.createdAt', 'ASC')
+                .orderBy('p.createdTime', 'ASC')
                 .getRawMany(),
             countQuery.getCount(),
         ])

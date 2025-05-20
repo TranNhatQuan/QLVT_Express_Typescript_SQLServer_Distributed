@@ -62,7 +62,7 @@ export class UserService {
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
                 .orderBy('u.role', 'DESC')
-                .addOrderBy('u.createdAt', 'ASC')
+                .addOrderBy('u.createdTime', 'ASC')
                 .getRawMany(),
             countQuery.getCount(),
         ])

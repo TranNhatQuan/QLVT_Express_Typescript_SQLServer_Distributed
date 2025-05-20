@@ -182,7 +182,7 @@ export class OrderService {
             .groupBy('o.orderId')
             .limit(req.pagination.limit)
             .offset(req.pagination.getOffset())
-            .orderBy('o.createdAt', 'ASC')
+            .orderBy('o.createdTime', 'ASC')
 
         const [branchs, total] = await Promise.all([
             query.getRawMany(),
