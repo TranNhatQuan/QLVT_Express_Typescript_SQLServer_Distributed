@@ -36,22 +36,21 @@ export class UserService {
 
         const query = AppDataSources.shardUser
             .getRepository(User)
-            .createQueryBuilder()
-            .from(User, 'u')
+            .createQueryBuilder('u')
             .where(removeUndefinedFields(filter))
             .select([
-                'u.userId',
-                'u.name',
-                'u.role',
-                'u.branchId',
-                'u.address',
-                'u.phone',
-                'u.email',
-                'u.dob',
-                'u.createdTime',
-                'u.updatedTime',
-                'u.createdBy',
-                'u.updatedBy',
+                'u.userId userId',
+                'u.name name',
+                'u.role role',
+                'u.branchId branchId',
+                'u.address address',
+                'u.phone phone',
+                'u.email email',
+                'u.dob dob',
+                'u.createdTime createdTime',
+                'u.updatedTime updatedTime',
+                'u.createdBy createdBy',
+                'u.updatedBy updatedBy',
             ])
 
         const countQuery = query.clone()
