@@ -61,8 +61,7 @@ export class AuthService {
         const plainPayload = instanceToPlain(decoded.payload)
         const authPayload = plainToInstance(AuthPayload, plainPayload)
 
-        const jwtSecret =
-            this.config.jwt.accessSecret + this.config.saltPassword
+        const jwtSecret = this.config.jwt.accessSecret
         try {
             jwt.verify(token, jwtSecret)
         } catch (err) {
@@ -75,7 +74,7 @@ export class AuthService {
         const cacheKey = CacheKeys.accessToken(authPayload.userId)
         const key = await this.cacheManager.get(cacheKey)
 
-        if (!key && key !== token) {
+        if (!key || key !== token) {
             throw Errors.Unauthorized
         }
 
@@ -110,8 +109,7 @@ export class AuthService {
         const plainPayload = instanceToPlain(decoded.payload)
         const authPayload = plainToInstance(AuthPayload, plainPayload)
 
-        const jwtSecret =
-            this.config.jwt.refreshSecret + this.config.saltPassword
+        const jwtSecret = this.config.jwt.refreshSecret
 
         try {
             jwt.verify(token, jwtSecret)
@@ -125,7 +123,7 @@ export class AuthService {
         const cacheKey = CacheKeys.refreshToken(authPayload.userId)
         const key = await this.cacheManager.get(cacheKey)
 
-        if (!key && key !== token) {
+        if (!key || key !== token) {
             throw Errors.Unauthorized
         }
 
