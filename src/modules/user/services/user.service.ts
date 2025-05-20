@@ -41,7 +41,6 @@ export class UserService {
             .where(removeUndefinedFields(filter))
             .select([
                 'u.userId',
-                'u.username',
                 'u.name',
                 'u.role',
                 'u.branchId',
