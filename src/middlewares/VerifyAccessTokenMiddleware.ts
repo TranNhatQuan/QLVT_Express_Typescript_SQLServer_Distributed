@@ -5,10 +5,10 @@ import { getAuthHeader } from '../modules/auth/auth.middleware'
 import { AuthService } from '../modules/auth/auth.service'
 import { Errors } from '../utils/error'
 import _ from 'lodash'
-import { AppDataSources } from '../database/connection'
 import { User } from '../modules/user/entities/user.entity'
 import { plainToInstance } from 'class-transformer'
 import { UserDTO } from '../modules/user/dtos/user.dto'
+import { DBTypeMapping } from '../configs/types/application-constants.type'
 
 @Service()
 @Middleware({ type: 'before' })
@@ -28,7 +28,7 @@ export class VerifyAccessTokenMiddleware implements ExpressMiddlewareInterface {
 
         const payload = await this.authService.verifyToken(token)
 
-        const user = await AppDataSources.shardUser
+        const user = await DBTypeMapping[payload.branchId]
             .createQueryBuilder()
             .from(User, 'u')
             .where({

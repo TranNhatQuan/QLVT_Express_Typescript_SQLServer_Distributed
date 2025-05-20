@@ -12,7 +12,7 @@ export const REFRESH_TOKEN_TYPE = 'refresh_token'
 export class AuthPayload {
     userId: string
     role: UserRole
-    branchId?: string
+    branchId: string
     username?: string
 }
 
