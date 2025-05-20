@@ -6,7 +6,7 @@ import { Config } from '../../configs'
 
 export interface AuthRequest extends Request {
     userId: string
-    roleId: number
+    role: number
     accessToken: string
     username: string
 }
@@ -28,7 +28,7 @@ export class AuthMiddleware {
 
             const payload = await this.authService.verifyToken(token)
             req.userId = payload.userId
-            req.roleId = payload.roleId
+            req.role = payload.role
             req.accessToken = token
             req.username = payload.username
 
@@ -49,7 +49,7 @@ export class AuthMiddleware {
             if (token) {
                 const payload = await this.authService.verifyToken(token)
                 req.userId = payload.userId
-                req.roleId = payload.roleId
+                req.role = payload.role
                 req.accessToken = token
                 req.username = payload.username
             }

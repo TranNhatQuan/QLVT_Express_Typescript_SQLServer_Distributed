@@ -37,7 +37,7 @@ export class VerifyAccessTokenMiddleware implements ExpressMiddlewareInterface {
 
         _.assign(req, {
             userId: payload.userId,
-            roleId: payload.roleId,
+            role: payload.role,
             accessToken: token,
             username: payload.username,
             userAction: plainToInstance(UserDTO, user, {
