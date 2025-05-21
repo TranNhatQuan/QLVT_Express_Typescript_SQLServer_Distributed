@@ -122,6 +122,16 @@ export class UserService {
         )
     }
 
+    async signOut(userId: string) {
+        const accessTokenKey = CacheKeys.accessToken(userId)
+        const refreshTokenKey = CacheKeys.refreshToken(userId)
+
+        await Promise.all([
+            this.cacheManager.del(accessTokenKey),
+            this.cacheManager.del(refreshTokenKey),
+        ])
+    }
+
     async signIn(req: SignInRequest) {
         const user = await DBTypeMapping[req.dbType]
             .getRepository(User)

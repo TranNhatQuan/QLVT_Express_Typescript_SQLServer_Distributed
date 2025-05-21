@@ -47,6 +47,7 @@ export class VerifyAccessTokenMiddleware implements ExpressMiddlewareInterface {
         })
 
         req.body['userAction'] = req['userAction']
+        req.query['userAction'] = req['userAction']
 
         return next()
     }

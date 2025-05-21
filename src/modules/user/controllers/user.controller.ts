@@ -19,6 +19,7 @@ import { CreateUserRequest } from '../requests/create-user.request'
 import { DeleteUserRequest } from '../requests/delete-user.request'
 import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
 import { SignInRequest } from '../requests/sign-in.request'
+import { BaseReq } from '../../../base/base.request'
 
 @Service()
 @JsonController('/v1/users')
@@ -83,6 +84,20 @@ export class UserController {
     ) {
         const result = await this.userService.signIn(data)
         return new ResponseWrapper(result)
+    }
+
+    @Delete('/sign-out')
+    @UseBefore(VerifyAccessTokenMiddleware)
+    async signOut(
+        @Body({
+            transform: {
+                excludeExtraneousValues: true,
+            },
+        })
+        data: BaseReq
+    ) {
+        await this.userService.signOut(data.userAction.userId)
+        return new ResponseWrapper(true)
     }
 
     @Delete('/:userId/delete')
