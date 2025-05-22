@@ -21,6 +21,7 @@ import { ExportReceipt } from '../../export/entities/export-receipt.entity'
 import { ImportReceipt } from '../../import/entities/import-receipt.entity'
 import { OrderDTO } from '../dtos/order.dto'
 import { UpdateOrderRequest } from '../requests/update-order.request'
+import { ChangeOrderDetailRequest } from '../requests/change-order-detail.request'
 
 @Service()
 export class OrderService {
@@ -244,6 +245,34 @@ export class OrderService {
                 orderEntity['details'] = details
 
                 return orderEntity
+            }
+        )
+    }
+
+    async changeOrderDetail(req: ChangeOrderDetailRequest) {
+        return await startTransaction(
+            DBTypeMapping[req.userAction.originDBType],
+            async (manager) => {
+                await req.validateRequest(manager)
+
+                for (const detail of req.details) {
+                    const detailEntity = plainToInstance(OrderDetail, detail, {
+                        excludeExtraneousValues: true,
+                    })
+
+                    detailEntity.orderId = req.orderId
+
+                    detailEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+
+                    await manager.delete(OrderDetail, {
+                        orderId: req.orderId,
+                        productId: detailEntity.productId,
+                    })
+
+                    await manager.insert(OrderDetail, detailEntity)
+                }
+
+                return true
             }
         )
     }

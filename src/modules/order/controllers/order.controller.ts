@@ -22,6 +22,7 @@ import { DBTypeMapping } from '../../../configs/types/application-constants.type
 import { BaseReq } from '../../../base/base.request'
 import { UpdateOrderRequest } from '../requests/update-order.request'
 import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqParamsToBodyMiddleware'
+import { ChangeOrderDetailRequest } from '../requests/change-order-detail.request'
 
 @Service()
 @JsonController('/v1/orders')
@@ -82,6 +83,21 @@ export class OrderController {
         data: UpdateOrderRequest
     ) {
         const result = await this.orderService.updateOrder(data)
+        return new ResponseWrapper(result)
+    }
+
+    @Post('/:orderId/details')
+    @UseBefore(AssignReqParamsToBodyMiddleware)
+    async changeOrderDetail(
+        @Body({
+            required: true,
+            transform: {
+                excludeExtraneousValues: true,
+            },
+        })
+        data: ChangeOrderDetailRequest
+    ) {
+        const result = await this.orderService.changeOrderDetail(data)
         return new ResponseWrapper(result)
     }
 
