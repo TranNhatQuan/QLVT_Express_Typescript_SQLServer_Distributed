@@ -27,7 +27,7 @@ export class CustomerService {
             })
         )
 
-        const query = DBTypeMapping[req.dbType]
+        const query = DBTypeMapping[req.userAction.originDBType]
             .getRepository(Customer)
             .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
@@ -48,7 +48,7 @@ export class CustomerService {
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
                 .orderBy('b.createdTime', 'ASC')
-                .getRawMany(),
+                .getMany(),
             countQuery.getCount(),
         ])
 
@@ -76,7 +76,7 @@ export class CustomerService {
 
     async updateCustomer(req: UpdateCustomerRequest) {
         await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Customer, req.customerId, req.getDataUpdate())
+            await manager.update(Customer, req.customerId, req.getDataUpdate())
         })
 
         return true

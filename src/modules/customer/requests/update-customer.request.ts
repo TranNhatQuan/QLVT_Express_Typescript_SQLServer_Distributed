@@ -1,12 +1,14 @@
-import { Expose, plainToInstance } from 'class-transformer'
+import { Expose, plainToInstance, Transform } from 'class-transformer'
 import { IsNumber, IsOptional, MaxLength } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { removeUndefinedFields } from '../../../utils'
+import { ToNumber } from '../../../utils/transform'
 
 export class UpdateCustomerRequest extends BasePaginationReq {
     @Expose()
     @IsNumber()
+    @Transform(ToNumber)
     customerId: number
 
     @Expose()
@@ -33,6 +35,7 @@ export class UpdateCustomerRequest extends BasePaginationReq {
     @MaxLength(255)
     note?: string
 
+    @Expose()
     userAction?: UserDTO
 
     getDataUpdate() {

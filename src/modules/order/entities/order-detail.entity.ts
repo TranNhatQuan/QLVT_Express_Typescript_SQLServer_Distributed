@@ -2,7 +2,6 @@ import { Column, Entity, PrimaryColumn } from 'typeorm'
 import { AppBaseEntity } from '../../../base/base.entity'
 import { ColumnNumericTransformer } from '../../../database/transformers/column-numeric.transformer'
 import { Expose } from 'class-transformer'
-
 @Entity('OrderDetail')
 export class OrderDetail extends AppBaseEntity {
     @Expose()

@@ -28,5 +28,6 @@ export class CreateCustomerRequest extends BasePaginationReq {
     @MaxLength(255)
     note?: string
 
+    @Expose()
     userAction?: UserDTO
 }

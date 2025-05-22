@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
-import { IsIn, IsOptional } from 'class-validator'
+import { IsOptional } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
-import { DBType } from '../../../configs/types/application-constants.type'
+import { UserDTO } from '../../user/dtos/user.dto'
 
 export class GetListCustomerRequest extends BasePaginationReq {
     @Expose()
@@ -13,8 +13,7 @@ export class GetListCustomerRequest extends BasePaginationReq {
     search?: string
 
     @Expose()
-    @IsIn([DBType.HCM, DBType.HN, DBType.MASTER])
-    dbType: DBType
+    userAction?: UserDTO
 }
 
 export class CustomerFilter {

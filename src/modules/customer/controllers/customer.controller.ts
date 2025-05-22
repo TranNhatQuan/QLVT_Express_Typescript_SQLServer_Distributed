@@ -21,8 +21,8 @@ import { CustomerService } from '../services/customer.service'
 
 @Service()
 @JsonController('/v1/customers')
-@UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
+@UseBefore(VerifyAccessTokenMiddleware)
 export class CustomerController {
     constructor(@Inject() public customerService: CustomerService) {}
 
@@ -40,7 +40,7 @@ export class CustomerController {
         return new ResponseWrapper(result, null, data.pagination)
     }
 
-    @Put('/:customerId/update')
+    @Put('/:customerId')
     @UseBefore(AssignReqParamsToBodyMiddleware)
     async updateCustomer(
         @Body({
@@ -69,7 +69,7 @@ export class CustomerController {
         return new ResponseWrapper(result)
     }
 
-    @Delete('/:customerId/delete')
+    @Delete('/:customerId')
     async deleteCustomer(@Param('customerId') customerId: string) {
         await this.customerService.deleteCustomer(Number(customerId))
         return new ResponseWrapper(true)

@@ -6,13 +6,13 @@ import { UserRole } from '../modules/user/types/role.type'
 
 @Service()
 @Middleware({ type: 'before' })
-export class CheckManagerRoleMiddleware implements ExpressMiddlewareInterface {
+export class CheckAdminRoleMiddleware implements ExpressMiddlewareInterface {
     public async use(
         req: express.Request,
         res: express.Response,
         next: express.NextFunction
     ) {
-        if (req['userAction'].role !== UserRole.BranchManager) {
+        if (req['userAction'].role !== UserRole.CompanyAdmin) {
             throw Errors.Forbidden
         }
 

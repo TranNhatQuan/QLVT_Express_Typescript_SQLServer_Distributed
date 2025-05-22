@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer'
+import { Expose, Transform, Type } from 'class-transformer'
 import { Order } from '../entities/order.entity'
 import { OrderDetail } from '../entities/order-detail.entity'
 import { ImportDTO } from '../../import/dtos/import.dto'
@@ -20,6 +20,13 @@ export class OrderDetailDTO extends OrderDetail {
 
 export class OrderDTO extends Order {
     @Expose()
+    @Transform(({ obj }) => {
+        if (obj.jsonDetails) {
+            return JSON.parse(obj.jsonDetails)
+        }
+
+        return obj.details
+    })
     @Type(() => OrderDetailDTO)
     details?: OrderDetailDTO[]
 

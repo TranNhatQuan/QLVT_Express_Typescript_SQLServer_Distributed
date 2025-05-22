@@ -2,14 +2,8 @@ import { Service } from 'typedi'
 import { Errors } from '../../../utils/error'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
-import {
-    DBType,
-    DBTypeMapping,
-} from '../../../configs/types/application-constants.type'
-import {
-    createQueryManager,
-    startTransaction,
-} from '../../../database/connection'
+import { DBTypeMapping } from '../../../configs/types/application-constants.type'
+import { startTransaction } from '../../../database/connection'
 import { Order } from '../entities/order.entity'
 import {
     GetListOrderRequest,
@@ -23,7 +17,6 @@ import { User } from '../../user/entities/user.entity'
 import { OrderStatus } from '../types/order-status.type'
 import { EntityManager } from 'typeorm'
 import { OrderType } from '../types/order.type'
-import { Warehouse } from '../../warehouse/entities/warehouse.entity'
 import { Product } from '../../product/entities/product.entity'
 import { ExportReceipt } from '../../export/entities/export-receipt.entity'
 import { ImportReceipt } from '../../import/entities/import-receipt.entity'
@@ -161,33 +154,57 @@ export class OrderService {
         const countQuery = query.clone()
 
         query
-            .leftJoin(OrderDetail, 'od', 'o.orderId = od.orderId')
-            .leftJoin(Product, 'p', 'od.productId = p.productId')
+            // .leftJoin(OrderDetail, 'od', 'o.orderId = od.orderId')
+            // .leftJoin(Product, 'p', 'od.productId = p.productId')
             .select([
-                'o.*',
-                `JSON_ARRAYAGG(
-                                JSON_OBJECT(
-                                    'productId', od.productId,
-                                    'quantity', od.quantity,
-                                    'price', od.price,
-                                    'productName', p.name,
-                                    'productUnit', p.unit
-                                )
-                ) details`,
+                'o.orderId orderId',
+                'o.type type',
+                'o.status status',
+                'o.createdTime createdTime',
+                'o.updatedTime updatedTime',
+                'o.createdBy createdBy',
+                'o.updatedBy updatedBy',
+                'o.userId userId',
+                'o.customerId customerId',
+                'o.sourceWarehouseId sourceWarehouseId',
+                'o.destinationWarehouseId destinationWarehouseId',
             ])
-            .groupBy('o.orderId')
+            .addSelect(
+                `COALESCE(JSON_QUERY((
+                SELECT 
+                    od.productId,
+                    od.quantity,
+                    od.price,
+                    p.name AS productName,
+                    p.unit AS productUnit
+                FROM OrderDetail od
+                LEFT JOIN Product p ON p.productId = od.productId
+                WHERE od.orderId = o.orderId
+                FOR JSON PATH
+            )),'[]')`,
+                'jsonDetails'
+            )
             .limit(req.pagination.limit)
             .offset(req.pagination.getOffset())
             .orderBy('o.createdTime', 'ASC')
 
-        const [branchs, total] = await Promise.all([
+        const [data, total] = await Promise.all([
             query.getRawMany(),
             countQuery.getCount(),
         ])
 
+        // const orders = data.map((item) => {
+        //     return {
+        //         ...item,
+        //         details: JSON.parse(item.details),
+        //     }
+        // })
+
         req.pagination.total = total
 
-        return branchs
+        return plainToInstance(OrderDTO, data, {
+            excludeExtraneousValues: true,
+        })
     }
 
     async createOrder(req: CreateOrderRequest) {
@@ -250,45 +267,7 @@ export class OrderService {
         )
     }
 
-    // async cancelOrder(orderId: string, userAction: UserDTO) {
-    //     userAction.loadOrginDBType()
-
-    //     return await startTransaction(
-    //         DBTypeMapping[userAction.originDBType],
-    //         async (manager) => {
-    //             const order = await manager.findOne(Order, {
-    //                 where: { orderId },
-    //             })
-
-    //             this.checkStatus(order)
-
-    //             if (
-    //                 order.status == OrderStatus.Completed ||
-    //                 order.status == OrderStatus.Canceled ||
-    //                 order.type == OrderType.Transfer
-    //             ) {
-    //                 throw Errors.InvalidData
-    //             }
-    //             //TODO: check if order is in progress
-
-    //             const warehouseId =
-    //                 order.sourceWarehouseId ?? order.destinationWarehouseId
-
-    //             //TODO: check order done
-
-    //             await this.checkUserAction(userAction, order, manager)
-
-    //             order.status = OrderStatus.Canceled
-    //             order.updatedBy = userAction.userId
-
-    //             await manager.save(Order, order)
-    //         }
-    //     )
-    // }
-
     async completeOrder(orderId: string, userAction: UserDTO) {
-        userAction.loadOrginDBType()
-
         return await startTransaction(
             DBTypeMapping[userAction.originDBType],
             async (manager) => {
@@ -319,92 +298,6 @@ export class OrderService {
                 }
 
                 await this.checkUserAction(userAction, order, manager)
-
-                order.status = OrderStatus.Completed
-                order.updatedBy = userAction.userId
-
-                await manager.save(Order, order)
-            }
-        )
-    }
-
-    async completeOrderTransfer(orderId: string, userAction: UserDTO) {
-        userAction.loadOrginDBType()
-
-        let order: Order
-
-        await createQueryManager(
-            DBTypeMapping[userAction.originDBType],
-            async (manager) => {
-                order = await manager.findOne(Order, {
-                    where: { orderId },
-                })
-
-                this.checkStatus(order)
-
-                if (
-                    order.status == OrderStatus.Completed ||
-                    order.status == OrderStatus.Canceled ||
-                    order.type == OrderType.Transfer
-                ) {
-                    throw Errors.InvalidData
-                }
-
-                const warehouseId = order.destinationWarehouseId
-
-                // check progress warehouse
-
-                await this.checkUserAction(userAction, order, manager)
-            }
-        )
-
-        let sourceWarehouse: Warehouse
-
-        await createQueryManager(DBTypeMapping.USER, async (manager) => {
-            const warehouseId = order.sourceWarehouseId
-
-            sourceWarehouse = await manager.findOne(Warehouse, {
-                where: { warehouseId },
-            })
-
-            if (!sourceWarehouse) {
-                throw Errors.WarehouseNotFound
-            }
-
-            await this.checkUserAction(userAction, order, manager)
-        })
-
-        await createQueryManager(
-            DBTypeMapping[DBType[sourceWarehouse.branchId]],
-            async (manager) => {
-                //check progress warehouse
-            }
-        )
-
-        return await startTransaction(
-            DBTypeMapping[userAction.originDBType],
-            async (manager) => {
-                const order = await manager.findOne(Order, {
-                    where: { orderId },
-                })
-
-                this.checkStatus(order)
-
-                if (
-                    order.status == OrderStatus.Completed ||
-                    order.status == OrderStatus.Canceled ||
-                    order.type == OrderType.Transfer
-                ) {
-                    throw Errors.InvalidData
-                }
-                //TODO: check if order is in progress
-
-                await this.checkUserAction(userAction, order, manager)
-
-                const warehouseId =
-                    order.sourceWarehouseId ?? order.destinationWarehouseId
-
-                //TODO: check order done
 
                 order.status = OrderStatus.Completed
                 order.updatedBy = userAction.userId

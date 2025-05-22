@@ -72,23 +72,31 @@ export class OrderController {
         return new ResponseWrapper(result)
     }
 
+    @Put('/')
+    async updateOrder(
+        @Body({
+            required: true,
+            transform: {
+                excludeExtraneousValues: true,
+            },
+        })
+        data: CreateOrderRequest,
+        @CurrentUser({ required: true }) user: UserDTO
+    ) {
+        data.userAction = user
+
+        const result = await this.orderService.createOrder(data)
+        return new ResponseWrapper(result)
+    }
+
     @Delete('/:orderId/delete')
-    async deleteBranch(
+    async deleteOrder(
         @Param('orderId') orderId: string,
         @CurrentUser({ required: true }) user: UserDTO
     ) {
         await this.orderService.deleteOrder(orderId, user)
         return new ResponseWrapper(true)
     }
-
-    // @Put('/:orderId/cancel')
-    // async cancelOrder(
-    //     @Param('orderId') orderId: string,
-    //     @CurrentUser({ required: true }) user: UserDTO
-    // ) {
-    //     await this.orderService.cancelOrder(orderId, user)
-    //     return new ResponseWrapper(true)
-    // }
 
     @Put('/:orderId/complete')
     async completeOrder(

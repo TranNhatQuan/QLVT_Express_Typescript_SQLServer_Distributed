@@ -18,9 +18,7 @@ import { ProductService } from '../services/product.service'
 import { GetListProductRequest } from '../requests/get-list-product.request'
 import { UpdateProductRequest } from '../requests/update-product.request'
 import { CreateProductRequest } from '../requests/create-product.request'
-import { BaseReq } from '../../../base/base.request'
-import { UserRole } from '../../user/types/role.type'
-import { Errors } from '../../../utils/error'
+import { CheckAdminRoleMiddleware } from '../../../middlewares/CheckAdminRoleMiddleware copy'
 
 @Service()
 @JsonController('/v1/products')
@@ -73,15 +71,9 @@ export class ProductController {
     }
 
     @Delete('/:productId')
+    @UseBefore(CheckAdminRoleMiddleware)
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    async deleteProduct(
-        @Param('productId') productId: number,
-        @Body() data: BaseReq
-    ) {
-        if (data.userAction.role !== UserRole.CompanyAdmin) {
-            throw Errors.Forbidden
-        }
-
+    async deleteProduct(@Param('productId') productId: number) {
         await this.productService.deleteBranch(productId)
         return new ResponseWrapper(true)
     }
