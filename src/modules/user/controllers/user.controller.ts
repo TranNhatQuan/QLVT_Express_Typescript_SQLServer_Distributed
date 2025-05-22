@@ -59,6 +59,22 @@ export class UserController {
         return new ResponseWrapper(result, null, data.pagination)
     }
 
+    @Put('/:userId/reset-password')
+    @UseBefore(CheckDBSelectionMiddleware)
+    @UseBefore(VerifyAccessTokenMiddleware)
+    @UseBefore(AssignReqParamsToBodyMiddleware)
+    async resetPassword(
+        @Body({
+            transform: {
+                excludeExtraneousValues: true,
+            },
+        })
+        data: DeleteUserRequest
+    ) {
+        await this.userService.resetPassword(data)
+        return new ResponseWrapper(true)
+    }
+
     @Post('/')
     @UseBefore(CheckDBSelectionMiddleware)
     @UseBefore(VerifyAccessTokenMiddleware)

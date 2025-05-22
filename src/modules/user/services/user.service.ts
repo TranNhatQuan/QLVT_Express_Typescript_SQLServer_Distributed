@@ -79,13 +79,21 @@ export class UserService {
         return true
     }
 
+    async resetPassword(req: DeleteUserRequest) {
+        await startTransaction(DBTypeMapping[req.dbType], async (manager) => {
+            const password = bcrypt.hashSync('12345678', 10)
+
+            manager.update(User, req.userId, { password })
+        })
+
+        return true
+    }
+
     async createUser(req: CreateUserRequest) {
         const user = await startTransaction(
             DBTypeMapping[req.dbType],
             async (manager) => {
                 await req.validateRequest()
-
-                req.password = bcrypt.hashSync(req.password, 10)
 
                 const userEntity = plainToInstance(User, req, {
                     excludeExtraneousValues: true,
@@ -93,6 +101,7 @@ export class UserService {
 
                 await userEntity.genId(manager)
                 userEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+                userEntity.password = bcrypt.hashSync('12345678', 10)
 
                 await manager.insert(User, userEntity)
 

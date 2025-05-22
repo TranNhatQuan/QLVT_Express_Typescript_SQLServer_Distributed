@@ -5,8 +5,6 @@ import {
     IsIn,
     IsNotEmpty,
     IsOptional,
-    MaxLength,
-    MinLength,
 } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserRole } from '../types/role.type'
@@ -22,12 +20,6 @@ export class CreateUserRequest extends BasePaginationReq {
     @Expose()
     @IsEnum(UserRole)
     role: UserRole
-
-    @Expose()
-    @IsNotEmpty()
-    @MinLength(8)
-    @MaxLength(20)
-    password: string
 
     @Expose()
     @IsNotEmpty()
