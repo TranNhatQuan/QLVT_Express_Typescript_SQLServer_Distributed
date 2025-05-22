@@ -1,23 +1,19 @@
 import {
     Body,
-    Delete,
     Get,
     JsonController,
     Post,
-    Put,
     QueryParams,
     UseBefore,
 } from 'routing-controllers'
 import { Inject, Service } from 'typedi'
 import { ResponseWrapper } from '../../../utils/response'
-import { GetListBranchRequest } from '../requests/get-list-branch.request'
-import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqParamsToBodyMiddleware'
-import { UpdateBranchRequest } from '../requests/update-branch.request'
+
 import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTokenMiddleware'
-import { CreateBranchRequest } from '../requests/create-import.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
+import { CreateImportRequest } from '../requests/create-import.request'
 import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
 import { ImportService } from '../services/import.service'
+import { GetListImportRequest } from '../requests/get-list-import.request'
 
 @Service()
 @JsonController('/v1/imports')
@@ -34,25 +30,10 @@ export class ImportController {
                 excludeExtraneousValues: true,
             },
         })
-        data: GetListBranchRequest
+        data: GetListImportRequest
     ) {
         const result = await this.importService.getBranchs(data)
         return new ResponseWrapper(result, null, data.pagination)
-    }
-
-    @Put('/:branchId/update')
-    @UseBefore(AssignReqParamsToBodyMiddleware)
-    async updateBranch(
-        @Body({
-            required: true,
-            transform: {
-                excludeExtraneousValues: true,
-            },
-        })
-        data: UpdateBranchRequest
-    ) {
-        const result = await this.importService.updateBranch(data)
-        return new ResponseWrapper(result)
     }
 
     @Post('/')
@@ -63,24 +44,9 @@ export class ImportController {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateBranchRequest
+        data: CreateImportRequest
     ) {
         const result = await this.importService.createBranch(data)
         return new ResponseWrapper(result)
-    }
-
-    @Delete('/:branchId/delete')
-    @UseBefore(AssignReqParamsToBodyMiddleware)
-    async deleteBranch(
-        @Body({
-            required: true,
-            transform: {
-                excludeExtraneousValues: true,
-            },
-        })
-        data: DeleteBranchRequest
-    ) {
-        await this.importService.deleteBranch(data)
-        return new ResponseWrapper(true)
     }
 }

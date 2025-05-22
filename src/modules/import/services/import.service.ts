@@ -1,35 +1,34 @@
 import { Service } from 'typedi'
-import { Branch } from '../entities/branch.entity'
 import { Errors } from '../../../utils/error'
-import {
-    BranchFilter,
-    GetListBranchRequest,
-} from '../requests/get-list-branch.request'
+
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-import.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
-import { UpdateBranchRequest } from '../requests/update-branch.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
+import { ImportReceipt } from '../entities/import-receipt.entity'
+import {
+    GetListImportRequest,
+    ImportFilter,
+} from '../requests/get-list-import.request'
+import { CreateImportRequest } from '../requests/create-import.request'
 
 @Service()
 export class ImportService {
-    checkBranchStatus(branchEntity: Branch) {
+    checkStatus(branchEntity: ImportReceipt) {
         if (!branchEntity) {
             throw Errors.BranchNotFound
         }
     }
 
-    async getBranchs(req: GetListBranchRequest) {
+    async getBranchs(req: GetListImportRequest) {
         const filter = removeUndefinedFields(
-            plainToInstance(BranchFilter, req, {
+            plainToInstance(ImportFilter, req, {
                 excludeExtraneousValues: true,
             })
         )
 
         const query = DBTypeMapping[req.dbType]
-            .getRepository(Branch)
+            .getRepository(ImportReceipt)
             .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
 
@@ -49,36 +48,19 @@ export class ImportService {
         return branchs
     }
 
-    async createBranch(req: CreateBranchRequest) {
+    async createBranch(req: CreateImportRequest) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                const branchEntity = plainToInstance(Branch, req, {
+                const branchEntity = plainToInstance(ImportReceipt, req, {
                     excludeExtraneousValues: true,
                 })
 
                 branchEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(Branch, branchEntity)
+                await manager.insert(ImportReceipt, branchEntity)
 
                 return branchEntity
-            }
-        )
-    }
-
-    async updateBranch(req: UpdateBranchRequest) {
-        await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Branch, req.branchId, req.getDataUpdate())
-        })
-
-        return true
-    }
-
-    async deleteBranch(req: DeleteBranchRequest) {
-        return await startTransaction(
-            AppDataSources.master,
-            async (manager) => {
-                await manager.softDelete(Branch, { branchId: req.branchId })
             }
         )
     }

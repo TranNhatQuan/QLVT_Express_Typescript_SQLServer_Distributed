@@ -1,35 +1,36 @@
 import { Service } from 'typedi'
-import { Branch } from '../entities/branch.entity'
+
 import { Errors } from '../../../utils/error'
-import {
-    BranchFilter,
-    GetListBranchRequest,
-} from '../requests/get-list-branch.request'
+
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateBranchRequest } from '../requests/create-export.request'
+import { CreateExportRequest } from '../requests/create-export.request'
 import { AppDataSources, startTransaction } from '../../../database/connection'
-import { UpdateBranchRequest } from '../requests/update-branch.request'
-import { DeleteBranchRequest } from '../requests/delete-branch.request'
+
+import {
+    ExportFilter,
+    GetListExportRequest,
+} from '../requests/get-list-export.request'
+import { ExportReceipt } from '../entities/export-receipt.entity'
 
 @Service()
 export class ExportService {
-    checkBranchStatus(branchEntity: Branch) {
+    checkStatus(branchEntity: ExportReceipt) {
         if (!branchEntity) {
-            throw Errors.BranchNotFound
+            throw Errors.ExportNotFound
         }
     }
 
-    async getBranchs(req: GetListBranchRequest) {
+    async getBranchs(req: GetListExportRequest) {
         const filter = removeUndefinedFields(
-            plainToInstance(BranchFilter, req, {
+            plainToInstance(ExportFilter, req, {
                 excludeExtraneousValues: true,
             })
         )
 
         const query = DBTypeMapping[req.dbType]
-            .getRepository(Branch)
+            .getRepository(ExportReceipt)
             .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
 
@@ -49,36 +50,19 @@ export class ExportService {
         return branchs
     }
 
-    async createBranch(req: CreateBranchRequest) {
+    async createBranch(req: CreateExportRequest) {
         return await startTransaction(
             AppDataSources.master,
             async (manager) => {
-                const branchEntity = plainToInstance(Branch, req, {
+                const branchEntity = plainToInstance(ExportReceipt, req, {
                     excludeExtraneousValues: true,
                 })
 
                 branchEntity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(Branch, branchEntity)
+                await manager.insert(ExportReceipt, branchEntity)
 
                 return branchEntity
-            }
-        )
-    }
-
-    async updateBranch(req: UpdateBranchRequest) {
-        await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Branch, req.branchId, req.getDataUpdate())
-        })
-
-        return true
-    }
-
-    async deleteBranch(req: DeleteBranchRequest) {
-        return await startTransaction(
-            AppDataSources.master,
-            async (manager) => {
-                await manager.softDelete(Branch, { branchId: req.branchId })
             }
         )
     }
