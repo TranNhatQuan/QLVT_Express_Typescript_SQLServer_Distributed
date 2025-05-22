@@ -21,8 +21,8 @@ import { CreateWarehouseRequest } from '../requests/create-warehouse.request'
 
 @Service()
 @JsonController('/v1/warehouses')
-@UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
+@UseBefore(VerifyAccessTokenMiddleware)
 export class WarehouseController {
     constructor(@Inject() public warehouseService: WarehouseService) {}
 

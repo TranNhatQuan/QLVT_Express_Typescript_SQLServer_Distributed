@@ -21,8 +21,8 @@ import { CreateProductRequest } from '../requests/create-product.request'
 
 @Service()
 @JsonController('/v1/products')
-@UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
+@UseBefore(VerifyAccessTokenMiddleware)
 export class ProductController {
     constructor(@Inject() public productService: ProductService) {}
 

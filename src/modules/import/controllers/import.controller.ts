@@ -21,8 +21,8 @@ import { BranchService } from '../services/import.service'
 
 @Service()
 @JsonController('/v1/branchs')
-@UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
+@UseBefore(VerifyAccessTokenMiddleware)
 export class BranchController {
     constructor(@Inject() public branchService: BranchService) {}
 

@@ -24,8 +24,8 @@ import { DBTypeMapping } from '../../../configs/types/application-constants.type
 
 @Service()
 @JsonController('/v1/orders')
-@UseBefore(VerifyAccessTokenMiddleware)
 @UseBefore(CheckDBSelectionMiddleware)
+@UseBefore(VerifyAccessTokenMiddleware)
 export class OrderController {
     constructor(@Inject() public orderService: OrderService) {}
 

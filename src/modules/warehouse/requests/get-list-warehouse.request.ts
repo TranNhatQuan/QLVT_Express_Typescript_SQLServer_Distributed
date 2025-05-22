@@ -3,6 +3,7 @@ import { IsIn, IsOptional } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { FindOperator, Like } from 'typeorm'
 import { DBType } from '../../../configs/types/application-constants.type'
+import { UserDTO } from '../../user/dtos/user.dto'
 
 export class GetListWarehouseRequest extends BasePaginationReq {
     @Expose()
@@ -24,6 +25,8 @@ export class GetListWarehouseRequest extends BasePaginationReq {
     @Expose()
     @IsIn([DBType.HCM, DBType.HN])
     dbType: DBType
+
+    userAction?: UserDTO
 }
 
 export class WarehouseFilter {
