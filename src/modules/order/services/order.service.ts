@@ -224,10 +224,6 @@ export class OrderService {
 
                 await manager.insert(Order, orderEntity)
 
-                req.details.forEach((detail) => {
-                    detail.orderId = orderEntity.orderId
-                })
-
                 const details = []
 
                 for (const detail of req.details) {
@@ -236,6 +232,8 @@ export class OrderService {
                     })
 
                     detailEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+
+                    detailEntity.orderId = orderEntity.orderId
 
                     await manager.insert(OrderDetail, detailEntity)
 
