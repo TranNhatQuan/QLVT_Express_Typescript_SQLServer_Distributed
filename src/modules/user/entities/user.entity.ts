@@ -74,7 +74,8 @@ export class User extends AppBaseEntity {
 
         await userIdentity.getForUpdate(manager)
 
-        this.userId = this.branchId + '-' + userIdentity.num.toString()
+        this.userId =
+            this.branchId + '-' + userIdentity.num.toString().padStart(10, '0')
 
         await userIdentity.increaseIdentity(manager)
     }

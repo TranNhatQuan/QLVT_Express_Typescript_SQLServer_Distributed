@@ -28,7 +28,8 @@ export class ImportReceipt extends AppBaseEntity {
 
         await userIdentity.getForUpdate(manager)
 
-        this.importId = branchId + '-' + userIdentity.num.toString()
+        this.importId =
+            branchId + '-' + userIdentity.num.toString().padStart(10, '0')
 
         await userIdentity.increaseIdentity(manager)
     }

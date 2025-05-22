@@ -43,7 +43,6 @@ export class OrderService {
                     'o.updatedTime updatedTime',
                     'o.createdBy createdBy',
                     'o.updatedBy updatedBy',
-                    'o.userId userId',
                     'o.customerId customerId',
                     'o.sourceWarehouseId sourceWarehouseId',
                     'o.destinationWarehouseId destinationWarehouseId',
@@ -68,12 +67,7 @@ export class OrderService {
                 .getRepository(ImportReceipt)
                 .createQueryBuilder('ir')
                 .where('ir.orderId = :orderId', { orderId })
-                .select([
-                    'ir.importId importId',
-                    'ir.orderId orderId',
-                    'ir.userId userId',
-                    'ir.warehouseId warehouseId',
-                ])
+                .select(['ir.importId importId'])
                 .addSelect(
                     `COALESCE(JSON_QUERY((
                 SELECT 
@@ -94,12 +88,7 @@ export class OrderService {
                 .createQueryBuilder('ir')
 
                 .where('ir.orderId = :orderId', { orderId })
-                .select([
-                    'ir.exportId exportId',
-                    'ir.orderId orderId',
-                    'ir.userId userId',
-                    'ir.warehouseId warehouseId',
-                ])
+                .select(['ir.exportId exportId'])
                 .addSelect(
                     `COALESCE(JSON_QUERY((
                 SELECT 
@@ -184,7 +173,6 @@ export class OrderService {
                 'o.updatedTime updatedTime',
                 'o.createdBy createdBy',
                 'o.updatedBy updatedBy',
-                'o.userId userId',
                 'o.customerId customerId',
                 'o.sourceWarehouseId sourceWarehouseId',
                 'o.destinationWarehouseId destinationWarehouseId',
@@ -231,6 +219,8 @@ export class OrderService {
                 })
 
                 orderEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+
+                await orderEntity.genId(manager, req.branchId)
 
                 await manager.insert(Order, orderEntity)
 

@@ -47,7 +47,8 @@ export class Order extends AppBaseEntity {
 
         await userIdentity.getForUpdate(manager)
 
-        this.orderId = branchId + '-' + userIdentity.num.toString()
+        this.orderId =
+            branchId + '-' + userIdentity.num.toString().padStart(10, '0')
 
         await userIdentity.increaseIdentity(manager)
     }

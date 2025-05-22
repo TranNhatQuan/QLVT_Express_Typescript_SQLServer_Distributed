@@ -63,6 +63,7 @@ export class CreateOrderRequest {
     sourceWarehouse: Warehouse
     destinationWarehouse: Warehouse
     customer: Customer
+    branchId: string
 
     async validateOrderDetail(detail: OrderDetailDTO, manager: EntityManager) {
         const product = await manager.getRepository(Product).findOne({
@@ -87,10 +88,16 @@ export class CreateOrderRequest {
                 throw Errors.InvalidData
         }
 
-        if (this.type === OrderType.Import && !this.sourceWarehouseId)
-            throw Errors.InvalidData
-        if (this.type === OrderType.Export && !this.destinationWarehouseId)
-            throw Errors.InvalidData
+        if (this.type === OrderType.Import) {
+            delete this.destinationWarehouseId
+
+            if (!this.sourceWarehouseId) throw Errors.InvalidData
+        }
+        if (this.type === OrderType.Export) {
+            delete this.sourceWarehouseId
+
+            if (!this.destinationWarehouseId) throw Errors.InvalidData
+        }
 
         if (this.sourceWarehouseId) {
             this.sourceWarehouse = await manager
@@ -104,6 +111,7 @@ export class CreateOrderRequest {
             if (!this.sourceWarehouse) {
                 throw Errors.WarehouseNotFound
             }
+            this.branchId = this.sourceWarehouse.branchId
         }
 
         if (this.destinationWarehouseId) {
@@ -118,6 +126,8 @@ export class CreateOrderRequest {
             if (!this.destinationWarehouse) {
                 throw Errors.WarehouseNotFound
             }
+
+            this.branchId = this.destinationWarehouse.branchId
         }
 
         if (this.customerId) {

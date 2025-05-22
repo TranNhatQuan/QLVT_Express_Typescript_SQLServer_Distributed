@@ -28,7 +28,8 @@ export class ExportReceipt extends AppBaseEntity {
 
         await userIdentity.getForUpdate(manager)
 
-        this.exportId = branchId + '-' + userIdentity.num.toString()
+        this.exportId =
+            branchId + '-' + userIdentity.num.toString().padStart(10, '0')
 
         await userIdentity.increaseIdentity(manager)
     }
