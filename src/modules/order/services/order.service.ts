@@ -176,8 +176,6 @@ export class OrderService {
         const countQuery = query.clone()
 
         query
-            // .leftJoin(OrderDetail, 'od', 'o.orderId = od.orderId')
-            // .leftJoin(Product, 'p', 'od.productId = p.productId')
             .select([
                 'o.orderId orderId',
                 'o.type type',
