@@ -2,7 +2,8 @@ import { Column, Entity, EntityManager, PrimaryColumn } from 'typeorm'
 import { AppBaseEntity } from '../../../base/base.entity'
 import { UserRole } from '../types/role.type'
 import { Expose } from 'class-transformer'
-import { UserIdentity } from './user-identity.entity'
+import { Identity } from '../../identity/entities/identity.entity'
+import { IdentityType } from '../../identity/types/identity.type'
 
 @Entity('User')
 export class User extends AppBaseEntity {
@@ -67,8 +68,9 @@ export class User extends AppBaseEntity {
     branchId: string
 
     async genId(manager: EntityManager) {
-        const userIdentity = new UserIdentity()
+        const userIdentity = new Identity()
         userIdentity.branchId = this.branchId
+        userIdentity.name = IdentityType.User
 
         await userIdentity.getForUpdate(manager)
 

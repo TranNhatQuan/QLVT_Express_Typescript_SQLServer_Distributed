@@ -222,7 +222,7 @@ export class OrderService {
 
     async createOrder(req: CreateOrderRequest) {
         return await startTransaction(
-            DBTypeMapping[req.dbType],
+            DBTypeMapping[req.userAction.originDBType],
             async (manager) => {
                 await req.validateRequest(manager)
 
@@ -326,7 +326,7 @@ export class OrderService {
         manager: EntityManager
     ) {
         const user = await manager.findOne(User, {
-            where: { userId: order.userId },
+            where: { userId: order.createdBy },
         })
 
         if (

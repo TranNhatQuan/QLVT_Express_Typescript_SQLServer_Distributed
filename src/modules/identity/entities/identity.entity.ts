@@ -7,20 +7,25 @@ import {
 } from 'typeorm'
 import { Expose } from 'class-transformer'
 
-@Entity('UserIdentity')
-export class UserIdentity extends BaseEntity {
+@Entity('Identity')
+export class Identity extends BaseEntity {
     @Expose()
     @PrimaryColumn({ type: 'varchar', nullable: false, length: 50 })
     branchId: string
+
+    @Expose()
+    @PrimaryColumn({ type: 'varchar', nullable: false, length: 255 })
+    name: string
 
     @Expose()
     @Column({ type: 'int', nullable: false, default: 0 })
     num: number
 
     async getForUpdate(manager: EntityManager) {
-        const num = await manager.findOne(UserIdentity, {
+        const num = await manager.findOne(Identity, {
             where: {
                 branchId: this.branchId,
+                name: this.name,
             },
             lock: {
                 mode: 'pessimistic_write',
@@ -30,15 +35,27 @@ export class UserIdentity extends BaseEntity {
             },
         })
 
+        if (!num) {
+            await manager.insert(Identity, {
+                branchId: this.branchId,
+                name: this.name,
+                num: 0,
+            })
+
+            this.num = 0
+
+            return
+        }
+
         this.num = num.num
     }
 
     async increaseIdentity(manager: EntityManager) {
         return await manager
             .createQueryBuilder()
-            .update(UserIdentity)
+            .update(Identity)
             .set({ num: () => 'num + 1' })
-            .where({ branchId: this.branchId })
+            .where({ branchId: this.branchId, name: this.name })
             .execute()
     }
 }

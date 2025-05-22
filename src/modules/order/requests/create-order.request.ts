@@ -1,22 +1,18 @@
 import { Expose, Type } from 'class-transformer'
 import {
-    ArrayMinSize,
     IsArray,
     IsEnum,
-    IsIn,
     IsNumber,
     IsOptional,
     ValidateNested,
 } from 'class-validator'
 import { UserDTO } from '../../user/dtos/user.dto'
-import { OrderStatus } from '../types/order-status.type'
 import { OrderType } from '../types/order.type'
 import { EntityManager } from 'typeorm'
 import { Errors } from '../../../utils/error'
 import { Warehouse } from '../../warehouse/entities/warehouse.entity'
 import { Customer } from '../../customer/entities/customer.entity'
 import { Product } from '../../product/entities/product.entity'
-import { DBType } from '../../../configs/types/application-constants.type'
 
 export class OrderDetailDTO {
     @Expose()
@@ -41,14 +37,6 @@ export class CreateOrderRequest {
     type: OrderType
 
     @Expose()
-    @IsOptional()
-    @IsEnum(OrderStatus)
-    status?: OrderStatus
-
-    @Expose()
-    userId: string
-
-    @Expose()
     @IsNumber()
     @IsOptional()
     sourceWarehouseId?: number
@@ -64,13 +52,8 @@ export class CreateOrderRequest {
     customerId?: number
 
     @Expose()
-    @IsIn([DBType.HCM, DBType.HN])
-    dbType: DBType
-
-    @Expose()
     @Type(() => OrderDetailDTO)
     @IsArray()
-    @ArrayMinSize(1)
     @ValidateNested({ each: true })
     details: OrderDetailDTO[]
 
@@ -103,6 +86,11 @@ export class CreateOrderRequest {
             if (!this.sourceWarehouseId && !this.destinationWarehouseId)
                 throw Errors.InvalidData
         }
+
+        if (this.type === OrderType.Import && !this.sourceWarehouseId)
+            throw Errors.InvalidData
+        if (this.type === OrderType.Export && !this.destinationWarehouseId)
+            throw Errors.InvalidData
 
         if (this.sourceWarehouseId) {
             this.sourceWarehouse = await manager

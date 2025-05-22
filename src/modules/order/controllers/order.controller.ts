@@ -1,6 +1,5 @@
 import {
     Body,
-    CurrentUser,
     Delete,
     Get,
     JsonController,
@@ -17,10 +16,10 @@ import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddlewa
 import { OrderService } from '../services/order.service'
 import { GetListOrderRequest } from '../requests/get-list-order.request'
 import { CreateOrderRequest } from '../requests/create-order.request'
-import { UserDTO } from '../../user/dtos/user.dto'
 import { GetOrderRequest } from '../requests/get-order.request'
 import { AssignReqParamsToQueryMiddleware } from '../../../middlewares/AssignReqParamsToQueryMiddleware'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
+import { BaseReq } from '../../../base/base.request'
 
 @Service()
 @JsonController('/v1/orders')
@@ -63,11 +62,8 @@ export class OrderController {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateOrderRequest,
-        @CurrentUser({ required: true }) user: UserDTO
+        data: CreateOrderRequest
     ) {
-        data.userAction = user
-
         const result = await this.orderService.createOrder(data)
         return new ResponseWrapper(result)
     }
@@ -80,11 +76,8 @@ export class OrderController {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateOrderRequest,
-        @CurrentUser({ required: true }) user: UserDTO
+        data: CreateOrderRequest
     ) {
-        data.userAction = user
-
         const result = await this.orderService.createOrder(data)
         return new ResponseWrapper(result)
     }
@@ -92,18 +85,18 @@ export class OrderController {
     @Delete('/:orderId/delete')
     async deleteOrder(
         @Param('orderId') orderId: string,
-        @CurrentUser({ required: true }) user: UserDTO
+        @QueryParams() data: BaseReq
     ) {
-        await this.orderService.deleteOrder(orderId, user)
+        await this.orderService.deleteOrder(orderId, data.userAction)
         return new ResponseWrapper(true)
     }
 
     @Put('/:orderId/complete')
     async completeOrder(
         @Param('orderId') orderId: string,
-        @CurrentUser({ required: true }) user: UserDTO
+        @QueryParams() data: BaseReq
     ) {
-        await this.orderService.completeOrder(orderId, user)
+        await this.orderService.completeOrder(orderId, data.userAction)
         return new ResponseWrapper(true)
     }
 }
