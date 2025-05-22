@@ -16,6 +16,12 @@ export class OrderDetailDTO extends OrderDetail {
 
     @Expose()
     exportedQuantity?: number
+
+    @Expose()
+    productName?: string
+
+    @Expose()
+    productUnit?: string
 }
 
 export class OrderDTO extends Order {

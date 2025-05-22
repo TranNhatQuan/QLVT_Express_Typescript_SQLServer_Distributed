@@ -17,11 +17,8 @@ import { User } from '../../user/entities/user.entity'
 import { OrderStatus } from '../types/order-status.type'
 import { EntityManager } from 'typeorm'
 import { OrderType } from '../types/order.type'
-import { Product } from '../../product/entities/product.entity'
 import { ExportReceipt } from '../../export/entities/export-receipt.entity'
 import { ImportReceipt } from '../../import/entities/import-receipt.entity'
-import { ExportReceiptDetail } from '../../export/entities/export-receipt-detail.entity'
-import { ImportReceiptDetail } from '../../import/entities/import-receipt-detail.entity'
 import { OrderDTO } from '../dtos/order.dto'
 
 @Service()
@@ -38,70 +35,95 @@ export class OrderService {
                 .getRepository(Order)
                 .createQueryBuilder('o')
                 .where('o.orderId = :orderId', { orderId })
-                .leftJoin(OrderDetail, 'od', 'o.orderId = od.orderId')
-                .leftJoin(Product, 'p', 'od.productId = p.productId')
                 .select([
-                    'o.*',
-                    `JSON_ARRAYAGG(
-                                JSON_OBJECT(
-                                    'productId', od.productId,
-                                    'quantity', od.quantity,
-                                    'price', od.price,
-                                    'productName', p.name,
-                                    'productUnit', p.unit
-                                )
-                ) details`,
+                    'o.orderId orderId',
+                    'o.type type',
+                    'o.status status',
+                    'o.createdTime createdTime',
+                    'o.updatedTime updatedTime',
+                    'o.createdBy createdBy',
+                    'o.updatedBy updatedBy',
+                    'o.userId userId',
+                    'o.customerId customerId',
+                    'o.sourceWarehouseId sourceWarehouseId',
+                    'o.destinationWarehouseId destinationWarehouseId',
                 ])
-                .groupBy('o.orderId')
+                .addSelect(
+                    `COALESCE(JSON_QUERY((
+                SELECT 
+                    od.productId productId,
+                    od.quantity quantity,
+                    od.price price,
+                    p.name productName,
+                    p.unit productUnit
+                FROM OrderDetail od
+                LEFT JOIN Product p ON p.productId = od.productId
+                WHERE od.orderId = o.orderId
+                FOR JSON PATH
+            )),'[]')`,
+                    'jsonDetails'
+                )
                 .getRawOne(),
             manager
                 .getRepository(ImportReceipt)
                 .createQueryBuilder('ir')
-                .leftJoin(
-                    ImportReceiptDetail,
-                    'ird',
-                    'ir.importId = ird.importId'
-                )
                 .where('ir.orderId = :orderId', { orderId })
                 .select([
-                    'ir.*',
-                    `JSON_ARRAYAGG(
-                                JSON_OBJECT(
-                                    'productId', ird.productId,
-                                    'quantity', ird.quantity,
-                                )
-                ) details`,
+                    'ir.importId importId',
+                    'ir.orderId orderId',
+                    'ir.userId userId',
+                    'ir.warehouseId warehouseId',
                 ])
-                .groupBy('ir.importId')
+                .addSelect(
+                    `COALESCE(JSON_QUERY((
+                SELECT 
+                    ird.productId productId,
+                    ird.quantity quantity,
+                    p.name productName,
+                    p.unit productUnit
+                FROM ImportReceiptDetail ird
+                LEFT JOIN Product p ON p.productId = ird.productId
+                WHERE ird.importId = ir.importId
+                FOR JSON PATH
+            )),'[]')`,
+                    'jsonDetails'
+                )
                 .getRawMany(),
             manager
                 .getRepository(ExportReceipt)
                 .createQueryBuilder('ir')
-                .leftJoin(
-                    ExportReceiptDetail,
-                    'ird',
-                    'ir.exportId = ird.exportId'
-                )
+
                 .where('ir.orderId = :orderId', { orderId })
                 .select([
-                    'ir.*',
-                    `JSON_ARRAYAGG(
-                                JSON_OBJECT(
-                                    'productId', ird.productId,
-                                    'quantity', ird.quantity,
-                                )
-                ) details`,
+                    'ir.exportId exportId',
+                    'ir.orderId orderId',
+                    'ir.userId userId',
+                    'ir.warehouseId warehouseId',
                 ])
-                .groupBy('ir.exportId')
+                .addSelect(
+                    `COALESCE(JSON_QUERY((
+                SELECT 
+                    ird.productId productId,
+                    ird.quantity quantity,
+                    p.name productName,
+                    p.unit productUnit
+                FROM ExportReceiptDetail ird
+                LEFT JOIN Product p ON p.productId = ird.productId
+                WHERE ird.exportId = ir.exportId
+                FOR JSON PATH
+            )),'[]')`,
+                    'jsonDetails'
+                )
+
                 .getRawMany(),
         ])
+
+        orderEntity.importDetails = importDetails
+        orderEntity.exportDetails = exportDetails
 
         const order = plainToInstance(OrderDTO, orderEntity, {
             excludeExtraneousValues: true,
         })
-
-        order.importDetails = importDetails
-        order.exportDetails = exportDetails
 
         const importQtyMap = new Map<number, number>()
 
@@ -192,13 +214,6 @@ export class OrderService {
             query.getRawMany(),
             countQuery.getCount(),
         ])
-
-        // const orders = data.map((item) => {
-        //     return {
-        //         ...item,
-        //         details: JSON.parse(item.details),
-        //     }
-        // })
 
         req.pagination.total = total
 
