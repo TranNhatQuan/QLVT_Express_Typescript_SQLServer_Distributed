@@ -40,7 +40,7 @@ export class BranchService {
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
                 .orderBy('b.createdTime', 'ASC')
-                .getRawMany(),
+                .getMany(),
             countQuery.getCount(),
         ])
 

@@ -33,6 +33,7 @@ export class UserDTO {
     @Expose()
     branchId: string
 
+    @Expose()
     originDBType?: DBType
 
     loadOrginDBType() {

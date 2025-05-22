@@ -83,7 +83,7 @@ export const AppDataSources = {
 }
 
 export const startTransaction = async <T>(
-    source = AppDataSources.master,
+    source: DataSource,
     runInTransaction: (entityManager: EntityManager) => Promise<T>
 ) => {
     const queryRunner = source.createQueryRunner()
@@ -96,7 +96,7 @@ export const startTransaction = async <T>(
 }
 
 export const createQueryManager = async <T>(
-    source = AppDataSources.master,
+    source: DataSource,
     handler: (manager: EntityManager) => Promise<T>
 ) => {
     const queryRunner = source.createQueryRunner()

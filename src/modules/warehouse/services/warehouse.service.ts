@@ -49,8 +49,6 @@ export class WarehouseService {
     }
 
     async createWarehouse(req: CreateWarehouseRequest) {
-        console.log('req', req)
-
         return await startTransaction(
             DBTypeMapping[req.branchId],
             async (manager) => {
@@ -69,7 +67,11 @@ export class WarehouseService {
 
     async updateWarehouse(req: UpdateWarehouseRequest) {
         await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Warehouse, req.warehouseId, req.getDataUpdate())
+            await manager.update(
+                Warehouse,
+                req.warehouseId,
+                req.getDataUpdate()
+            )
         })
 
         return true

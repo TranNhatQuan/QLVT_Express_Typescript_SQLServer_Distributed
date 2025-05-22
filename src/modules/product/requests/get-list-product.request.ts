@@ -1,6 +1,7 @@
 import { Expose, Transform } from 'class-transformer'
-import { IsIn, IsNumber, IsOptional } from 'class-validator'
+import { IsEnum, IsNumber, IsOptional } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
+import { UserDTO } from '../../user/dtos/user.dto'
 import { FindOperator, Like } from 'typeorm'
 import { DBType } from '../../../configs/types/application-constants.type'
 
@@ -19,7 +20,10 @@ export class GetListProductRequest extends BasePaginationReq {
     unit?: string
 
     @Expose()
-    @IsIn([DBType.HCM, DBType.HN])
+    userAction?: UserDTO
+
+    @Expose()
+    @IsEnum(DBType)
     dbType: DBType
 }
 

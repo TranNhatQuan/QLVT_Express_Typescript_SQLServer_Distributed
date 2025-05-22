@@ -18,6 +18,9 @@ import { ProductService } from '../services/product.service'
 import { GetListProductRequest } from '../requests/get-list-product.request'
 import { UpdateProductRequest } from '../requests/update-product.request'
 import { CreateProductRequest } from '../requests/create-product.request'
+import { BaseReq } from '../../../base/base.request'
+import { UserRole } from '../../user/types/role.type'
+import { Errors } from '../../../utils/error'
 
 @Service()
 @JsonController('/v1/products')
@@ -27,7 +30,7 @@ export class ProductController {
     constructor(@Inject() public productService: ProductService) {}
 
     @Get('/')
-    async getListBranch(
+    async getListProduct(
         @QueryParams({
             required: true,
             transform: {
@@ -40,7 +43,7 @@ export class ProductController {
         return new ResponseWrapper(result, null, data.pagination)
     }
 
-    @Put('/:productId/update')
+    @Put('/:productId')
     @UseBefore(AssignReqParamsToBodyMiddleware)
     async updateProduct(
         @Body({
@@ -69,9 +72,16 @@ export class ProductController {
         return new ResponseWrapper(result)
     }
 
-    @Delete('/:productId/delete')
+    @Delete('/:productId')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    async deleteProduct(@Param('productId') productId: number) {
+    async deleteProduct(
+        @Param('productId') productId: number,
+        @Body() data: BaseReq
+    ) {
+        if (data.userAction.role !== UserRole.CompanyAdmin) {
+            throw Errors.Forbidden
+        }
+
         await this.productService.deleteBranch(productId)
         return new ResponseWrapper(true)
     }

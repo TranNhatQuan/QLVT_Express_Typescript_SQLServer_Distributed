@@ -1,12 +1,14 @@
-import { Expose, plainToInstance } from 'class-transformer'
+import { Expose, plainToInstance, Transform } from 'class-transformer'
 import { IsNumber, IsOptional, MaxLength } from 'class-validator'
 import { BasePaginationReq } from '../../../base/base-pagination.req'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { removeUndefinedFields } from '../../../utils'
+import { ToNumber } from '../../../utils/transform'
 
 export class UpdateProductRequest extends BasePaginationReq {
     @Expose()
     @IsNumber()
+    @Transform(ToNumber)
     productId: string
 
     @Expose()

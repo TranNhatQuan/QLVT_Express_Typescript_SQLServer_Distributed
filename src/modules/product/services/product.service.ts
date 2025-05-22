@@ -11,6 +11,8 @@ import {
 } from '../requests/get-list-product.request'
 import { CreateProductRequest } from '../requests/create-product.request'
 import { UpdateProductRequest } from '../requests/update-product.request'
+import { ImportReceiptDetail } from '../../import/entities/import-receipt-detail.entity'
+import { ExportReceiptDetail } from '../../export/entities/export-receipt-detail.entity'
 
 @Service()
 export class ProductService {
@@ -31,8 +33,25 @@ export class ProductService {
             .getRepository(Product)
             .createQueryBuilder('p')
             .where(removeUndefinedFields(filter))
+            .select([
+                'p.productId productId',
+                'p.name name',
+                'p.unit unit',
+                'p.createdTime createdTime',
+            ])
 
         const countQuery = query.clone()
+
+        query
+            .leftJoin(ImportReceiptDetail, 'ird', 'ird.productId = p.productId')
+            .leftJoin(ExportReceiptDetail, 'erd', 'erd.productId = p.productId')
+            .groupBy('p.productId, p.name, p.unit, p.createdTime')
+            .addSelect('SUM(COALESCE(ird.quantity, 0))', 'importQuantity')
+            .addSelect('SUM(COALESCE(erd.quantity, 0))', 'exportQuantity')
+            .addSelect(
+                'SUM(COALESCE(ird.quantity, 0)) - SUM(COALESCE(erd.quantity, 0))',
+                'quantity'
+            )
 
         const [branchs, total] = await Promise.all([
             query
@@ -67,7 +86,7 @@ export class ProductService {
 
     async updateProduct(req: UpdateProductRequest) {
         await startTransaction(AppDataSources.master, async (manager) => {
-            manager.update(Product, req.productId, req.getDataUpdate())
+            await manager.update(Product, req.productId, req.getDataUpdate())
         })
 
         return true

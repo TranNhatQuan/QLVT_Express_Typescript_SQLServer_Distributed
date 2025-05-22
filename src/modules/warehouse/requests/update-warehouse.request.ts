@@ -1,16 +1,13 @@
-import { Expose, plainToInstance } from 'class-transformer'
+import { Expose, plainToInstance, Transform } from 'class-transformer'
 import { IsNumber, IsOptional, MaxLength } from 'class-validator'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { removeUndefinedFields } from '../../../utils'
+import { ToNumber } from '../../../utils/transform'
 
 export class UpdateWarehouseRequest {
     @Expose()
-    @MaxLength(50)
-    @IsOptional()
-    branchId: string
-
-    @Expose()
     @IsNumber()
+    @Transform(ToNumber)
     warehouseId: number
 
     @Expose()

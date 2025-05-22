@@ -73,7 +73,7 @@ export class UserService {
 
     async updateUser(req: UpdateUserRequest) {
         await startTransaction(DBTypeMapping[req.dbType], async (manager) => {
-            manager.update(User, req.userId, req.getDataUpdate())
+            await manager.update(User, req.userId, req.getDataUpdate())
         })
 
         return true
@@ -83,7 +83,7 @@ export class UserService {
         await startTransaction(DBTypeMapping[req.dbType], async (manager) => {
             const password = bcrypt.hashSync('12345678', 10)
 
-            manager.update(User, req.userId, { password })
+            await manager.update(User, req.userId, { password })
         })
 
         return true

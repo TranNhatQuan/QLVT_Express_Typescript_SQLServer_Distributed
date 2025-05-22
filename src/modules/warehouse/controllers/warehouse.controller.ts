@@ -40,7 +40,7 @@ export class WarehouseController {
         return new ResponseWrapper(result, null, data.pagination)
     }
 
-    @Put('/:warehouseId/update')
+    @Put('/:warehouseId')
     @UseBefore(AssignReqParamsToBodyMiddleware)
     async updateWarehouse(
         @Body({
@@ -69,7 +69,7 @@ export class WarehouseController {
         return new ResponseWrapper(result)
     }
 
-    @Delete('/:warehouseId/delete')
+    @Delete('/:warehouseId')
     @UseBefore(AssignReqParamsToBodyMiddleware)
     async deleteBranch(@Param('warehouseId') warehouseId: number) {
         await this.warehouseService.deleteWarehouse(warehouseId)
