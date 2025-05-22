@@ -3,7 +3,7 @@ import { IsIn, IsNotEmpty } from 'class-validator'
 import { DBType } from '../../../configs/types/application-constants.type'
 import { UserDTO } from '../../user/dtos/user.dto'
 
-export class GetImportRequest {
+export class GetExportRequest {
     @Expose()
     @IsNotEmpty()
     importId: string

@@ -14,7 +14,7 @@ import { UpdateBranchRequest } from '../requests/update-branch.request'
 import { DeleteBranchRequest } from '../requests/delete-branch.request'
 
 @Service()
-export class BranchService {
+export class ImportService {
     checkBranchStatus(branchEntity: Branch) {
         if (!branchEntity) {
             throw Errors.BranchNotFound

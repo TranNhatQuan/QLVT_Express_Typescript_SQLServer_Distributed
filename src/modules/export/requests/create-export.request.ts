@@ -16,7 +16,7 @@ import { OrderService } from '../../order/services/order.service'
 import { OrderStatus } from '../../order/types/order-status.type'
 import { Warehouse } from '../../warehouse/entities/warehouse.entity'
 
-export class CreateImportDetailDTO {
+export class CreateExportDetailDTO {
     @Expose()
     importId?: string
 
@@ -29,7 +29,7 @@ export class CreateImportDetailDTO {
     quantity: number
 }
 
-export class CreateImportRequest {
+export class CreateExportRequest {
     @Expose()
     @IsNumber()
     orderId: string
@@ -43,18 +43,18 @@ export class CreateImportRequest {
     dbType: DBType
 
     @Expose()
-    @Type(() => CreateImportDetailDTO)
+    @Type(() => CreateExportDetailDTO)
     @IsArray()
     @ArrayMinSize(1)
     @ValidateNested({ each: true })
-    details: CreateImportDetailDTO[]
+    details: CreateExportDetailDTO[]
 
     @Expose()
     userAction?: UserDTO
 
     orderDetail: OrderDTO
 
-    validateDetail(detail: CreateImportDetailDTO) {
+    validateDetail(detail: CreateExportDetailDTO) {
         const orderProductDetail = this.orderDetail.details.find(
             (u) => u.productId === detail.productId
         )

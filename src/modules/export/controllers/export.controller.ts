@@ -17,14 +17,14 @@ import { VerifyAccessTokenMiddleware } from '../../../middlewares/VerifyAccessTo
 import { CreateBranchRequest } from '../requests/create-export.request'
 import { DeleteBranchRequest } from '../requests/delete-branch.request'
 import { CheckDBSelectionMiddleware } from '../../../middlewares/CheckDBMiddleware'
-import { BranchService } from '../services/export.service'
+import { ExportService } from '../services/export.service'
 
 @Service()
 @JsonController('/v1/exports')
 @UseBefore(CheckDBSelectionMiddleware)
 @UseBefore(VerifyAccessTokenMiddleware)
 export class ExportController {
-    constructor(@Inject() public branchService: BranchService) {}
+    constructor(@Inject() public exportService: ExportService) {}
 
     @Get('/')
     async getListBranch(
@@ -36,7 +36,7 @@ export class ExportController {
         })
         data: GetListBranchRequest
     ) {
-        const result = await this.branchService.getBranchs(data)
+        const result = await this.exportService.getBranchs(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
 
@@ -51,7 +51,7 @@ export class ExportController {
         })
         data: UpdateBranchRequest
     ) {
-        const result = await this.branchService.updateBranch(data)
+        const result = await this.exportService.updateBranch(data)
         return new ResponseWrapper(result)
     }
 
@@ -65,7 +65,7 @@ export class ExportController {
         })
         data: CreateBranchRequest
     ) {
-        const result = await this.branchService.createBranch(data)
+        const result = await this.exportService.createBranch(data)
         return new ResponseWrapper(result)
     }
 
@@ -80,7 +80,7 @@ export class ExportController {
         })
         data: DeleteBranchRequest
     ) {
-        await this.branchService.deleteBranch(data)
+        await this.exportService.deleteBranch(data)
         return new ResponseWrapper(true)
     }
 }
