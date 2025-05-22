@@ -20,6 +20,7 @@ import { OrderType } from '../types/order.type'
 import { ExportReceipt } from '../../export/entities/export-receipt.entity'
 import { ImportReceipt } from '../../import/entities/import-receipt.entity'
 import { OrderDTO } from '../dtos/order.dto'
+import { UpdateOrderRequest } from '../requests/update-order.request'
 
 @Service()
 export class OrderService {
@@ -247,6 +248,21 @@ export class OrderService {
         )
     }
 
+    async updateOrder(req: UpdateOrderRequest) {
+        return await startTransaction(
+            DBTypeMapping[req.userAction.originDBType],
+            async (manager) => {
+                await req.validateRequest(manager)
+
+                await this.checkUserAction(req.userAction, req.order, manager)
+
+                await manager.update(Order, req.orderId, req.getDataForUpdate())
+
+                return true
+            }
+        )
+    }
+
     async deleteOrder(orderId: string, userAction: UserDTO) {
         userAction.loadOrginDBType()
 
@@ -318,12 +334,17 @@ export class OrderService {
         })
 
         if (
-            (order.createdBy !== userAction.userId &&
-                userAction.role === UserRole.Staff) ||
-            (userAction.role === UserRole.BranchManager &&
-                userAction.branchId !== user.branchId) ||
-            userAction.role !== UserRole.CompanyAdmin
+            user.role === UserRole.Staff &&
+            order.createdBy == userAction.userId
         )
-            throw Errors.Forbidden
+            return
+
+        if (
+            userAction.role === UserRole.BranchManager &&
+            userAction.branchId === user.branchId
+        )
+            return
+
+        throw Errors.Forbidden
     }
 }

@@ -20,6 +20,8 @@ import { GetOrderRequest } from '../requests/get-order.request'
 import { AssignReqParamsToQueryMiddleware } from '../../../middlewares/AssignReqParamsToQueryMiddleware'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
 import { BaseReq } from '../../../base/base.request'
+import { UpdateOrderRequest } from '../requests/update-order.request'
+import { AssignReqParamsToBodyMiddleware } from '../../../middlewares/AssignReqParamsToBodyMiddleware'
 
 @Service()
 @JsonController('/v1/orders')
@@ -68,7 +70,8 @@ export class OrderController {
         return new ResponseWrapper(result)
     }
 
-    @Put('/')
+    @Put('/:orderId')
+    @UseBefore(AssignReqParamsToBodyMiddleware)
     async updateOrder(
         @Body({
             required: true,
@@ -76,13 +79,13 @@ export class OrderController {
                 excludeExtraneousValues: true,
             },
         })
-        data: CreateOrderRequest
+        data: UpdateOrderRequest
     ) {
-        const result = await this.orderService.createOrder(data)
+        const result = await this.orderService.updateOrder(data)
         return new ResponseWrapper(result)
     }
 
-    @Delete('/:orderId/delete')
+    @Delete('/:orderId')
     async deleteOrder(
         @Param('orderId') orderId: string,
         @QueryParams() data: BaseReq

@@ -1,40 +1,45 @@
-import { Expose, Type } from 'class-transformer'
-import {
-    IsArray,
-    IsEnum,
-    IsNumber,
-    IsOptional,
-    ValidateNested,
-} from 'class-validator'
+import { Expose, plainToInstance } from 'class-transformer'
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional } from 'class-validator'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { OrderType } from '../types/order.type'
 import { EntityManager } from 'typeorm'
 import { Errors } from '../../../utils/error'
 import { Warehouse } from '../../warehouse/entities/warehouse.entity'
 import { Customer } from '../../customer/entities/customer.entity'
-import { Product } from '../../product/entities/product.entity'
+import { Order } from '../entities/order.entity'
 
-export class OrderDetailDTO {
+export class UpdateOrderDTO {
     @Expose()
+    type: OrderType
+
+    @Expose()
+    @IsNumber()
+    sourceWarehouseId: number
+
+    @Expose()
+    @IsNumber()
+    destinationWarehouseId: number
+
+    @Expose()
+    @IsNumber()
+    customerId: number
+
+    @Expose()
+    updatedBy: string
+
+    @Expose()
+    updatedTime: Date
+}
+
+export class UpdateOrderRequest {
+    @Expose()
+    @IsNotEmpty()
     orderId: string
 
     @Expose()
-    @IsNumber()
-    productId: number
-
-    @Expose()
-    @IsNumber()
-    quantity: number
-
-    @Expose()
-    @IsNumber()
-    price: number
-}
-
-export class CreateOrderRequest {
-    @Expose()
+    @IsOptional()
     @IsEnum(OrderType)
-    type: OrderType
+    type?: OrderType
 
     @Expose()
     @IsNumber()
@@ -52,32 +57,29 @@ export class CreateOrderRequest {
     customerId?: number
 
     @Expose()
-    @Type(() => OrderDetailDTO)
-    @IsArray()
-    @ValidateNested({ each: true })
-    details: OrderDetailDTO[]
-
-    @Expose()
     userAction?: UserDTO
 
     sourceWarehouse: Warehouse
     destinationWarehouse: Warehouse
     customer: Customer
+    order: Order
     branchId: string
 
-    async validateOrderDetail(detail: OrderDetailDTO, manager: EntityManager) {
-        const product = await manager.getRepository(Product).findOne({
+    async validateRequest(manager: EntityManager) {
+        this.order = await manager.getRepository(Order).findOne({
             where: {
-                productId: detail.productId,
+                orderId: this.orderId,
             },
         })
 
-        if (!product) {
-            throw Errors.ProductNotFound
+        if (!this.order) {
+            throw Errors.OrderNotFound
         }
-    }
+        this.type ??= this.order.type
+        this.sourceWarehouseId ??= this.order.sourceWarehouseId
+        this.destinationWarehouseId ??= this.order.destinationWarehouseId
+        this.customerId ??= this.order.customerId
 
-    async validateRequest(manager: EntityManager) {
         if (this.type === OrderType.Transfer) {
             if (!this.destinationWarehouseId || !this.sourceWarehouseId)
                 throw Errors.InvalidData
@@ -89,12 +91,12 @@ export class CreateOrderRequest {
         }
 
         if (this.type === OrderType.Import) {
-            delete this.destinationWarehouseId
+            this.destinationWarehouseId = null
 
             if (!this.sourceWarehouseId) throw Errors.InvalidData
         }
         if (this.type === OrderType.Export) {
-            delete this.sourceWarehouseId
+            this.sourceWarehouseId = null
 
             if (!this.destinationWarehouseId) throw Errors.InvalidData
         }
@@ -152,9 +154,17 @@ export class CreateOrderRequest {
         ) {
             throw Errors.NotSupportedFeature
         }
+    }
 
-        for (const detail of this.details) {
-            await this.validateOrderDetail(detail, manager)
-        }
+    getDataForUpdate() {
+        const data = plainToInstance(UpdateOrderDTO, this, {
+            excludeExtraneousValues: true,
+        })
+
+        data.updatedBy = this.userAction.userId
+
+        data.updatedTime = new Date()
+
+        return data
     }
 }
