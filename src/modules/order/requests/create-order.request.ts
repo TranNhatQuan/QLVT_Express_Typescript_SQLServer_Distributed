@@ -74,7 +74,9 @@ export class CreateOrderRequest {
     @ValidateNested({ each: true })
     details: OrderDetailDTO[]
 
+    @Expose()
     userAction?: UserDTO
+
     sourceWarehouse: Warehouse
     destinationWarehouse: Warehouse
     customer: Customer

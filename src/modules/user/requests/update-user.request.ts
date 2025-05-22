@@ -40,7 +40,8 @@ export class UpdateUserRequest extends BasePaginationReq {
     @IsIn([DBType.HCM, DBType.HN])
     dbType: DBType
 
-    userAction: UserDTO
+    @Expose()
+    userAction?: UserDTO
 
     getDataUpdate() {
         const data = removeUndefinedFields(

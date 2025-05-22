@@ -22,6 +22,7 @@ export class ChangePasswordRequest extends BasePaginationReq {
     @IsOptional()
     userId?: string
 
+    @Expose()
     userAction: UserDTO
 
     async validateRequest() {

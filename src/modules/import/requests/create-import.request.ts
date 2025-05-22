@@ -49,6 +49,7 @@ export class CreateImportRequest {
     @ValidateNested({ each: true })
     details: CreateImportDetailDTO[]
 
+    @Expose()
     userAction?: UserDTO
 
     orderDetail: OrderDTO

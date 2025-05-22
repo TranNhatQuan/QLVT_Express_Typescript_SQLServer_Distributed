@@ -13,5 +13,6 @@ export class CreateProductRequest {
     @IsNotEmpty()
     unit: string
 
+    @Expose()
     userAction?: UserDTO
 }

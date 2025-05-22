@@ -19,5 +19,6 @@ export class CreateBranchRequest extends BasePaginationReq {
     @IsNotEmpty()
     address: string
 
+    @Expose()
     userAction?: UserDTO
 }

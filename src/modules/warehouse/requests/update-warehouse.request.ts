@@ -23,6 +23,7 @@ export class UpdateWarehouseRequest {
     @IsOptional()
     address: string
 
+    @Expose()
     userAction?: UserDTO
 
     getDataUpdate() {

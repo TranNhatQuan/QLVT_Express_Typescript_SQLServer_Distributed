@@ -56,7 +56,7 @@ export class WarehouseController {
     }
 
     @Post('/')
-    async createBranch(
+    async createWarehouse(
         @Body({
             required: true,
             transform: {

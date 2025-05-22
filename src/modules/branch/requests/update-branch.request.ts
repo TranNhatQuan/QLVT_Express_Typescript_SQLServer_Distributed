@@ -19,6 +19,7 @@ export class UpdateBranchRequest extends BasePaginationReq {
     @IsOptional()
     address: string
 
+    @Expose()
     userAction?: UserDTO
 
     getDataUpdate() {

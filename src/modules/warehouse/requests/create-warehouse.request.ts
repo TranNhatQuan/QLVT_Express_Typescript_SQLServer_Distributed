@@ -18,5 +18,6 @@ export class CreateWarehouseRequest {
     @IsNotEmpty()
     address: string
 
+    @Expose()
     userAction?: UserDTO
 }

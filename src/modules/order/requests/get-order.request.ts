@@ -12,5 +12,6 @@ export class GetOrderRequest {
     @IsIn([DBType.HCM, DBType.HN])
     dbType: DBType
 
-    userAction: UserDTO
+    @Expose()
+    userAction?: UserDTO
 }

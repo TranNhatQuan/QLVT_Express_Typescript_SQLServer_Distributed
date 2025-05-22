@@ -17,6 +17,7 @@ export class DeleteUserRequest extends BasePaginationReq {
     @IsIn([DBType.HCM, DBType.HN])
     dbType: DBType
 
+    @Expose()
     userAction: UserDTO
 
     user: User

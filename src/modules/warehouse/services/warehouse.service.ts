@@ -49,8 +49,10 @@ export class WarehouseService {
     }
 
     async createWarehouse(req: CreateWarehouseRequest) {
+        console.log('req', req)
+
         return await startTransaction(
-            AppDataSources.master,
+            DBTypeMapping[req.branchId],
             async (manager) => {
                 const branchEntity = plainToInstance(Warehouse, req, {
                     excludeExtraneousValues: true,

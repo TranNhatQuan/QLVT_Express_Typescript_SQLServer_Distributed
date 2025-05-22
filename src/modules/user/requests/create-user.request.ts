@@ -45,6 +45,7 @@ export class CreateUserRequest extends BasePaginationReq {
     @IsIn([DBType.HCM, DBType.HN])
     dbType: DBType
 
+    @Expose()
     userAction?: UserDTO
 
     async validateRequest() {

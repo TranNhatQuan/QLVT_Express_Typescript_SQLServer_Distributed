@@ -19,6 +19,7 @@ export class UpdateProductRequest extends BasePaginationReq {
     @IsOptional()
     unit?: string
 
+    @Expose()
     userAction?: UserDTO
 
     getDataUpdate() {

@@ -8,5 +8,6 @@ export class DeleteBranchRequest extends BasePaginationReq {
     @IsNotEmpty()
     branchId: string
 
-    userAction: UserDTO
+    @Expose()
+    userAction?: UserDTO
 }
