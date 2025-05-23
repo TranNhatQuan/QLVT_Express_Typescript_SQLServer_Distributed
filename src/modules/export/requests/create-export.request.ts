@@ -2,19 +2,19 @@ import { Expose, Type } from 'class-transformer'
 import {
     ArrayMinSize,
     IsArray,
-    IsIn,
+    IsNotEmpty,
     IsNumber,
     ValidateNested,
 } from 'class-validator'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { EntityManager } from 'typeorm'
 import { Errors } from '../../../utils/error'
-import { DBType } from '../../../configs/types/application-constants.type'
 import { OrderDTO } from '../../order/dtos/order.dto'
 import Container from 'typedi'
 import { OrderService } from '../../order/services/order.service'
 import { OrderStatus } from '../../order/types/order-status.type'
 import { Warehouse } from '../../warehouse/entities/warehouse.entity'
+import { OrderType } from '../../order/types/order.type'
 
 export class CreateExportDetailDTO {
     @Expose()
@@ -31,16 +31,8 @@ export class CreateExportDetailDTO {
 
 export class CreateExportRequest {
     @Expose()
-    @IsNumber()
+    @IsNotEmpty()
     orderId: string
-
-    @Expose()
-    @IsNumber()
-    warehouseId: number
-
-    @Expose()
-    @IsIn([DBType.HCM, DBType.HN])
-    dbType: DBType
 
     @Expose()
     @Type(() => CreateExportDetailDTO)
@@ -52,6 +44,8 @@ export class CreateExportRequest {
     @Expose()
     userAction?: UserDTO
 
+    warehouseId?: number
+    warehouse?: Warehouse
     orderDetail: OrderDTO
 
     validateDetail(detail: CreateExportDetailDTO) {
@@ -63,7 +57,7 @@ export class CreateExportRequest {
 
         let quantity = 0
 
-        this.orderDetail.importDetails.forEach((item) => {
+        this.orderDetail.exportDetails.forEach((item) => {
             const product = item.details.find(
                 (u) => u.productId === detail.productId
             )
@@ -85,20 +79,20 @@ export class CreateExportRequest {
 
         if (
             this.orderDetail.status !== OrderStatus.InProgress ||
-            this.orderDetail.importDone
+            this.orderDetail.type === OrderType.Import ||
+            this.orderDetail.exportDone
         )
             throw Errors.InvalidData
 
-        if (this.orderDetail.destinationWarehouseId !== this.warehouseId)
-            throw Errors.InvalidData
-
-        const warehouse = await manager.getRepository(Warehouse).findOne({
+        this.warehouse = await manager.getRepository(Warehouse).findOne({
             where: {
-                warehouseId: this.warehouseId,
+                warehouseId: this.orderDetail.sourceWarehouseId,
             },
         })
 
-        if (warehouse.branchId !== this.userAction.branchId)
+        this.warehouseId = this.warehouse.warehouseId
+
+        if (this.warehouse.branchId !== this.userAction.branchId)
             throw Errors.Forbidden
 
         this.details.forEach((detail) => {

@@ -49,7 +49,7 @@ export class ImportService {
                 .leftJoin(
                     ImportReceiptDetail,
                     'ird',
-                    'ird.importReceiptId = b.importId'
+                    'ird.importId = b.importId'
                 )
                 .andWhere('ird.productId = :productId', {
                     productId: req.productId,

@@ -14,6 +14,7 @@ import Container from 'typedi'
 import { OrderService } from '../../order/services/order.service'
 import { OrderStatus } from '../../order/types/order-status.type'
 import { Warehouse } from '../../warehouse/entities/warehouse.entity'
+import { OrderType } from '../../order/types/order.type'
 
 export class CreateImportDetailDTO {
     @Expose()
@@ -78,6 +79,7 @@ export class CreateImportRequest {
 
         if (
             this.orderDetail.status !== OrderStatus.InProgress ||
+            this.orderDetail.type === OrderType.Export ||
             this.orderDetail.importDone
         )
             throw Errors.InvalidData

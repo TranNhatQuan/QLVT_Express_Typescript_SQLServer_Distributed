@@ -1,21 +1,23 @@
 import { Service } from 'typedi'
 import { Errors } from '../../../utils/error'
+
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { CreateExportRequest } from '../requests/create-export.request'
-import { AppDataSources, startTransaction } from '../../../database/connection'
+import { startTransaction } from '../../../database/connection'
+import { ExportReceipt } from '../entities/export-receipt.entity'
 import {
     ExportFilter,
     GetListExportRequest,
 } from '../requests/get-list-export.request'
-import { ExportReceipt } from '../entities/export-receipt.entity'
+import { ExportReceiptDetail } from '../entities/export-receipt-detail.entity'
+import { CreateExportRequest } from '../requests/create-export.request'
 
 @Service()
 export class ExportService {
-    checkStatus(exportEntity: ExportReceipt) {
-        if (!exportEntity) {
-            throw Errors.ExportNotFound
+    checkStatus(entity: ExportReceipt) {
+        if (!entity) {
+            throw Errors.ImportNotFound
         }
     }
 
@@ -28,38 +30,88 @@ export class ExportService {
 
         const query = DBTypeMapping[req.dbType]
             .getRepository(ExportReceipt)
-            .createQueryBuilder('e')
-            .where(filter)
+            .createQueryBuilder('b')
+            .where(removeUndefinedFields(filter))
+            .select([
+                'b.exportId exportId',
+                'b.orderId orderId',
+                'b.createdTime createdTime',
+                'b.updatedTime updatedTime',
+                'b.createdBy createdBy',
+                'b.updatedBy updatedBy',
+                'b.warehouseId warehouseId',
+            ])
 
         const countQuery = query.clone()
 
-        const [exports, total] = await Promise.all([
+        if (req.productId) {
+            query
+                .leftJoin(
+                    ExportReceiptDetail,
+                    'ird',
+                    'ird.exportId = b.exportId'
+                )
+                .andWhere('ird.productId = :productId', {
+                    productId: req.productId,
+                })
+                .groupBy(
+                    'b.exportId, b.orderId, b.createdTime, b.updatedTime, b.createdBy, b.updatedBy, b.warehouseId'
+                )
+        }
+
+        const [branchs, total] = await Promise.all([
             query
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
-                .orderBy('e.createdTime', 'ASC')
+                .orderBy('b.createdTime', 'ASC')
                 .getRawMany(),
             countQuery.getCount(),
         ])
 
         req.pagination.total = total
 
-        return exports
+        return branchs
     }
 
     async createExport(req: CreateExportRequest) {
         return await startTransaction(
-            AppDataSources.master,
+            DBTypeMapping[req.userAction.originDBType],
             async (manager) => {
-                const exportEntity = plainToInstance(ExportReceipt, req, {
+                await req.validateRequest(manager)
+
+                const entity = plainToInstance(ExportReceipt, req, {
                     excludeExtraneousValues: true,
                 })
 
-                exportEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+                entity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(ExportReceipt, exportEntity)
+                await entity.genId(manager, req.warehouse.branchId)
 
-                return exportEntity
+                await manager.insert(ExportReceipt, entity)
+
+                const details = []
+
+                for (const detail of req.details) {
+                    const detailEntity = plainToInstance(
+                        ExportReceiptDetail,
+                        detail,
+                        {
+                            excludeExtraneousValues: true,
+                        }
+                    )
+
+                    detailEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+
+                    detailEntity.exportId = entity.exportId
+
+                    await manager.insert(ExportReceiptDetail, detailEntity)
+
+                    details.push(detailEntity)
+                }
+
+                entity['details'] = details
+
+                return entity
             }
         )
     }
