@@ -22,7 +22,7 @@ export class ExportController {
     constructor(@Inject() public exportService: ExportService) {}
 
     @Get('/')
-    async getListBranch(
+    async getExports(
         @QueryParams({
             required: true,
             transform: {
@@ -31,12 +31,12 @@ export class ExportController {
         })
         data: GetListExportRequest
     ) {
-        const result = await this.exportService.getBranchs(data)
+        const result = await this.exportService.getExports(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
 
     @Post('/')
-    async createBranch(
+    async createExport(
         @Body({
             required: true,
             transform: {
@@ -45,7 +45,7 @@ export class ExportController {
         })
         data: CreateExportRequest
     ) {
-        const result = await this.exportService.createBranch(data)
+        const result = await this.exportService.createExport(data)
         return new ResponseWrapper(result)
     }
 }

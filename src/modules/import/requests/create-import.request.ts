@@ -52,6 +52,7 @@ export class CreateImportRequest {
     @Expose()
     userAction?: UserDTO
 
+    warehouse?: Warehouse
     orderDetail: OrderDTO
 
     validateDetail(detail: CreateImportDetailDTO) {
@@ -92,13 +93,13 @@ export class CreateImportRequest {
         if (this.orderDetail.destinationWarehouseId !== this.warehouseId)
             throw Errors.InvalidData
 
-        const warehouse = await manager.getRepository(Warehouse).findOne({
+        this.warehouse = await manager.getRepository(Warehouse).findOne({
             where: {
                 warehouseId: this.warehouseId,
             },
         })
 
-        if (warehouse.branchId !== this.userAction.branchId)
+        if (this.warehouse.branchId !== this.userAction.branchId)
             throw Errors.Forbidden
 
         this.details.forEach((detail) => {

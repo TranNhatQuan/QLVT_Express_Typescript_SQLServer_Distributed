@@ -17,10 +17,6 @@ export class GetListImportRequest extends BasePaginationReq {
     productId?: number
 
     @Expose()
-    @IsOptional()
-    branchId?: string
-
-    @Expose()
     @IsIn([DBType.HCM, DBType.HN])
     dbType: DBType
 }

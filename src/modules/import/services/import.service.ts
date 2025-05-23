@@ -11,16 +11,17 @@ import {
     ImportFilter,
 } from '../requests/get-list-import.request'
 import { CreateImportRequest } from '../requests/create-import.request'
+import { ImportReceiptDetail } from '../entities/import-receipt-detail.entity'
 
 @Service()
 export class ImportService {
-    checkStatus(branchEntity: ImportReceipt) {
-        if (!branchEntity) {
-            throw Errors.BranchNotFound
+    checkStatus(entity: ImportReceipt) {
+        if (!entity) {
+            throw Errors.ImportNotFound
         }
     }
 
-    async getBranchs(req: GetListImportRequest) {
+    async getImports(req: GetListImportRequest) {
         const filter = removeUndefinedFields(
             plainToInstance(ImportFilter, req, {
                 excludeExtraneousValues: true,
@@ -31,14 +32,38 @@ export class ImportService {
             .getRepository(ImportReceipt)
             .createQueryBuilder('b')
             .where(removeUndefinedFields(filter))
+            .select([
+                'b.importId importId',
+                'b.orderId orderId',
+                'b.createdTime',
+                'b.updatedTime',
+                'b.createdBy',
+                'b.updatedBy',
+                'b.warehouseId warehouseId',
+            ])
 
         const countQuery = query.clone()
+
+        if (req.productId) {
+            query
+                .leftJoin(
+                    ImportReceiptDetail,
+                    'ird',
+                    'ird.importReceiptId = b.importId'
+                )
+                .andWhere('ird.productId = :productId', {
+                    productId: req.productId,
+                })
+                .groupBy(
+                    'b.importId, b.orderId, b.createdTime, b.updatedTime, b.createdBy, b.updatedBy, b.warehouseId'
+                )
+        }
 
         const [branchs, total] = await Promise.all([
             query
                 .limit(req.pagination.limit)
                 .offset(req.pagination.getOffset())
-                .orderBy('u.createdTime', 'ASC')
+                .orderBy('b.createdTime', 'ASC')
                 .getRawMany(),
             countQuery.getCount(),
         ])
@@ -48,19 +73,45 @@ export class ImportService {
         return branchs
     }
 
-    async createBranch(req: CreateImportRequest) {
+    async createImport(req: CreateImportRequest) {
         return await startTransaction(
-            AppDataSources.master,
+            DBTypeMapping[req.userAction.originDBType],
             async (manager) => {
-                const branchEntity = plainToInstance(ImportReceipt, req, {
+                await req.validateRequest(manager)
+
+                const entity = plainToInstance(ImportReceipt, req, {
                     excludeExtraneousValues: true,
                 })
 
-                branchEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+                entity.setCreatedAndUpdatedBy(req.userAction.userId)
 
-                await manager.insert(ImportReceipt, branchEntity)
+                await entity.genId(manager, req.warehouse.branchId)
 
-                return branchEntity
+                await manager.insert(ImportReceipt, entity)
+
+                const details = []
+
+                for (const detail of req.details) {
+                    const detailEntity = plainToInstance(
+                        ImportReceiptDetail,
+                        detail,
+                        {
+                            excludeExtraneousValues: true,
+                        }
+                    )
+
+                    detailEntity.setCreatedAndUpdatedBy(req.userAction.userId)
+
+                    detailEntity.importId = entity.importId
+
+                    await manager.insert(ImportReceiptDetail, detailEntity)
+
+                    details.push(detailEntity)
+                }
+
+                entity['details'] = details
+
+                return entity
             }
         )
     }

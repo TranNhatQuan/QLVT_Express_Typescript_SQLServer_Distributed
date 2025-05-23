@@ -23,7 +23,7 @@ export class ImportController {
     constructor(@Inject() public importService: ImportService) {}
 
     @Get('/')
-    async getListBranch(
+    async getImports(
         @QueryParams({
             required: true,
             transform: {
@@ -32,12 +32,12 @@ export class ImportController {
         })
         data: GetListImportRequest
     ) {
-        const result = await this.importService.getBranchs(data)
+        const result = await this.importService.getImports(data)
         return new ResponseWrapper(result, null, data.pagination)
     }
 
     @Post('/')
-    async createBranch(
+    async createImport(
         @Body({
             required: true,
             transform: {
@@ -46,7 +46,7 @@ export class ImportController {
         })
         data: CreateImportRequest
     ) {
-        const result = await this.importService.createBranch(data)
+        const result = await this.importService.createImport(data)
         return new ResponseWrapper(result)
     }
 }
