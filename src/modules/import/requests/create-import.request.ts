@@ -2,14 +2,13 @@ import { Expose, Type } from 'class-transformer'
 import {
     ArrayMinSize,
     IsArray,
-    IsIn,
+    IsNotEmpty,
     IsNumber,
     ValidateNested,
 } from 'class-validator'
 import { UserDTO } from '../../user/dtos/user.dto'
 import { EntityManager } from 'typeorm'
 import { Errors } from '../../../utils/error'
-import { DBType } from '../../../configs/types/application-constants.type'
 import { OrderDTO } from '../../order/dtos/order.dto'
 import Container from 'typedi'
 import { OrderService } from '../../order/services/order.service'
@@ -31,16 +30,8 @@ export class CreateImportDetailDTO {
 
 export class CreateImportRequest {
     @Expose()
-    @IsNumber()
+    @IsNotEmpty()
     orderId: string
-
-    @Expose()
-    @IsNumber()
-    warehouseId: number
-
-    @Expose()
-    @IsIn([DBType.HCM, DBType.HN])
-    dbType: DBType
 
     @Expose()
     @Type(() => CreateImportDetailDTO)
@@ -52,6 +43,7 @@ export class CreateImportRequest {
     @Expose()
     userAction?: UserDTO
 
+    warehouseId?: number
     warehouse?: Warehouse
     orderDetail: OrderDTO
 
@@ -90,14 +82,13 @@ export class CreateImportRequest {
         )
             throw Errors.InvalidData
 
-        if (this.orderDetail.destinationWarehouseId !== this.warehouseId)
-            throw Errors.InvalidData
-
         this.warehouse = await manager.getRepository(Warehouse).findOne({
             where: {
-                warehouseId: this.warehouseId,
+                warehouseId: this.orderDetail.destinationWarehouseId,
             },
         })
+
+        this.warehouseId = this.warehouse.warehouseId
 
         if (this.warehouse.branchId !== this.userAction.branchId)
             throw Errors.Forbidden

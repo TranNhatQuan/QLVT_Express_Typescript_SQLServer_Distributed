@@ -109,6 +109,8 @@ export class OrderService {
                 .getRawMany(),
         ])
 
+        this.checkStatus(orderEntity)
+
         orderEntity.importDetails = importDetails
         orderEntity.exportDetails = exportDetails
 

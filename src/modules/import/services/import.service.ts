@@ -4,7 +4,7 @@ import { Errors } from '../../../utils/error'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { AppDataSources, startTransaction } from '../../../database/connection'
+import { startTransaction } from '../../../database/connection'
 import { ImportReceipt } from '../entities/import-receipt.entity'
 import {
     GetListImportRequest,
@@ -35,10 +35,10 @@ export class ImportService {
             .select([
                 'b.importId importId',
                 'b.orderId orderId',
-                'b.createdTime',
-                'b.updatedTime',
-                'b.createdBy',
-                'b.updatedBy',
+                'b.createdTime createdTime',
+                'b.updatedTime updatedTime',
+                'b.createdBy createdBy',
+                'b.updatedBy updatedBy',
                 'b.warehouseId warehouseId',
             ])
 
