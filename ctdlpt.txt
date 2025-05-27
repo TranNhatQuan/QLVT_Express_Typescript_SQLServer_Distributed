@@ -1,0 +1,247 @@
+4.1:
+SELECT ENO, PNAME
+FROM PROJ2 NATURAL JOIN ASG
+WHERE PNO = "P4"
+4.2
+SELECT RESP, BUDGET
+FROM PROJ1 NATURAL JOIN ASG1
+WHERE PNAME = "CAD/CAM"
+
+UNION
+
+SELECT RESP, BUDGET
+FROM PROJ2 NATURAL JOIN ASG2
+WHERE PNAME = "CAD/CAM"
+
+UNION
+
+SELECT RESP, BUDGET
+FROM PROJ2 NATURAL JOIN ASG3
+WHERE PNAME = "CAD/CAM"
+
+Truy vấn trên phân mảnh này tốt hơn truy vấn gốc vì nó giảm số lượng dữ liệu cần xử lý
+4.3
+SELECT ENAME
+FROM EMP1 NATURAL JOIN ASG1 NATURAL JOIN PROJ1
+WHERE PNAME = "Instrumentation"
+
+UNION
+
+SELECT ENAME
+FROM EMP1 NATURAL JOIN ASG2 NATURAL JOIN PROJ2
+WHERE PNAME = "Instrumentation"
+
+4.4
+Join program tối ưu:
+
+    Truyền EMP (100 hàng) và ASG (200 hàng) đến site của PROJ.
+Thực hiện JOIN (EMP ⋈ ASG) ⋈ PROJ tại site của PROJ.
+4.5
+Truyền EMP (100 hàng) và ASG (200 hàng) đến site của PROJ song song.
+Thực hiện JOIN (EMP ⋈ ASG) ⋈ PROJ tại site của PROJ.
+4.6
+Ta sẽ thực hiện các phép semijoin theo thứ tự sau để giảm kích thước từng quan hệ:
+Bước 1: Giảm ASG bằng semijoin với EMP
+
+    Semijoin: ASG ⋉ EMP.
+        Truyền các giá trị ENO từ EMP (ở S1) đến site của ASG (S2).
+        Kích thước truyền: 100 hàng (giả định mỗi hàng có một giá trị ENO duy nhất, không lặp lại).
+        Tại S2, lọc ASG để chỉ giữ các hàng có ENO tồn tại trong EMP.
+        Kết quả: ASG' (phần giảm của ASG) có kích thước tối đa 200 (vì ASG gốc có 200 hàng), nhưng chỉ chứa các hàng khớp với EMP. Vì size(EMP ⋈ ASG) = 300, ta giả định tất cả hàng của ASG đều khớp với một số hàng của EMP, nên ASG' vẫn có 200 hàng (không giảm ngay).
+
+Bước 2: Giảm ASG' bằng semijoin với PROJ
+
+    Semijoin: ASG' ⋉ PROJ.
+        Truyền các giá trị PNO từ PROJ (ở S3) đến site của ASG (S2).
+        Kích thước truyền: 300 hàng (giả định mỗi hàng có một giá trị PNO duy nhất).
+        Tại S2, lọc ASG' để chỉ giữ các hàng có PNO tồn tại trong PROJ.
+        Kết quả: ASG'' (phần giảm thêm của ASG) có kích thước bằng size(ASG ⋈ PROJ) = 200, vì chỉ những hàng của ASG khớp với PROJ được giữ lại.
+
+Bước 3: Giảm EMP bằng semijoin với ASG''
+
+    Semijoin: EMP ⋉ ASG''.
+        Truyền các giá trị ENO từ ASG'' (ở S2) đến site của EMP (S1).
+        Kích thước truyền: 200 hàng (giả định mỗi hàng có một giá trị ENO duy nhất).
+        Tại S1, lọc EMP để chỉ giữ các hàng có ENO tồn tại trong ASG''.
+        Kết quả: EMP' có kích thước tối đa bằng size(EMP ⋈ ASG) = 300, nhưng vì EMP gốc có 100 hàng và tất cả có thể khớp, ta giữ 100 hàng (giả định không giảm thêm vì tất cả hàng của EMP đều liên quan).
+
+Bước 4: Giảm PROJ bằng semijoin với ASG''
+
+    Semijoin: PROJ ⋉ ASG''.
+        Truyền các giá trị PNO từ ASG'' (ở S2) đến site của PROJ (S3).
+        Kích thước truyền: 200 hàng (giả định mỗi hàng có một giá trị PNO duy nhất).
+        Tại S3, lọc PROJ để chỉ giữ các hàng có PNO tồn tại trong ASG''.
+        Kết quả: PROJ' có kích thước bằng size(ASG ⋈ PROJ) = 200, vì chỉ những hàng của PROJ khớp với ASG'' được giữ lại.
+4.7
+Trường hợp 1: Mạng chung (General Network)
+
+    Đặc điểm: Dữ liệu chỉ truyền đến site cần thiết.
+
+Bước 1: Giảm kích thước bằng semijoin
+
+    Giảm ASG (S2) với EMP:
+        Truyền ENO từ EMP (S1: 1000, S2: 1000, S3: 1000) đến ASG (S2).
+        Tổng số hàng truyền: 1000 + 1000 + 1000 = 3000.
+        Tại S2, lọc ASG (2000 hàng) để giữ các hàng có ENO khớp với EMP từ S1, S2, S3.
+        Kết quả: ASG' tại S2, kích thước tối đa 2000, nhưng chỉ chứa hàng khớp, giả định giảm còn 2000 (vì size(EMP ⋈ ASG) = 2000).
+    Giảm ASG' (S2) với PROJ (S1):
+        Truyền PNO từ PROJ (S1: 1000) đến ASG' (S2).
+        Tổng số hàng truyền: 1000.
+        Tại S2, lọc ASG' để giữ các hàng có PNO khớp với PROJ.
+        Kết quả: ASG'' tại S2, kích thước bằng size(ASG ⋈ PROJ) = 1000.
+    Giảm EMP với ASG'' (S2):
+        Truyền ENO từ ASG'' (S2: 1000) đến EMP (S1, S2, S3).
+        Tổng số hàng truyền: 1000.
+        Tại S1, S2, S3, lọc EMP (1000 mỗi site) để giữ các hàng có ENO khớp với ASG''.
+        Kết quả: EMP' tại S1, S2, S3, tổng kích thước 2000 (phân bố đều, ~667 mỗi site).
+    Giảm PROJ (S1) với ASG'' (S2):
+        Truyền PNO từ ASG'' (S2: 1000) đến PROJ (S1).
+        Tổng số hàng truyền: 1000.
+        Tại S1, lọc PROJ (1000 hàng) để giữ các hàng có PNO khớp với ASG''.
+        Kết quả: PROJ' tại S1, kích thước 1000 (không giảm, vì tất cả khớp).
+    Tổng chi phí truyền semijoin: 3000 + 1000 + 1000 + 1000 = 5000.
+
+Bước 2: Thực hiện nối
+
+    Sau khi giảm:
+        EMP': S1 (~667), S2 (~667), S3 (~666), tổng 2000.
+        ASG'': S2 (1000).
+        PROJ': S1 (1000).
+    Chọn site S2 (có ASG'') để thực hiện nối:
+        Truyền EMP' từ S1 (667), S2 (667), S3 (666) đến S2: 2000 hàng.
+        Truyền PROJ' từ S1 (1000) đến S2: 1000 hàng.
+        Tổng chi phí truyền nối: 2000 + 1000 = 3000.
+    Tổng chi phí truyền: 5000 + 3000 = 8000.
+
+Trường hợp 2: Mạng phát sóng (Broadcast Network)
+
+    Đặc điểm: Dữ liệu được phát sóng đến tất cả site, nhưng chỉ site cần thiết xử lý.
+
+Bước 1: Giảm kích thước bằng semijoin
+
+    Giảm ASG (S2) với EMP:
+        Phát sóng ENO từ EMP (S1: 1000, S2: 1000, S3: 1000) đến tất cả site.
+        Tổng số hàng phát sóng: 3000.
+        Tại S2, lọc ASG (2000 hàng) thành ASG' (2000 hàng, vì khớp với EMP).
+    Giảm ASG' (S2) với PROJ (S1):
+        Phát sóng PNO từ PROJ (S1: 1000) đến tất cả site.
+        Tổng số hàng phát sóng: 1000.
+        Tại S2, lọc ASG' thành ASG'' (1000 hàng).
+    Giảm EMP với ASG'' (S2):
+        Phát sóng ENO từ ASG'' (1000) đến tất cả site.
+        Tổng số hàng phát sóng: 1000.
+        Tại S1, S2, S3, lọc EMP thành EMP' (tổng 2000 hàng, ~667 mỗi site).
+    Giảm PROJ (S1) với ASG'' (S2):
+        Phát sóng PNO từ ASG'' (1000) đến tất cả site.
+        Tổng số hàng phát sóng: 1000.
+        Tại S1, lọc PROJ thành PROJ' (1000 hàng, không giảm).
+    Tổng chi phí truyền semijoin: 3000 + 1000 + 1000 + 1000 = 5000.
+
+Bước 2: Thực hiện nối
+
+    Sau khi giảm:
+        EMP': S1 (~667), S2 (~667), S3 (~666).
+        ASG'': S2 (1000).
+        PROJ': S1 (1000).
+    Chọn S2 để nối:
+        Truyền EMP' từ S1 (667), S2 (667), S3 (666) đến S2: 2000 hàng.
+        Truyền PROJ' từ S1 (1000) đến S2: 1000 hàng.
+        Tổng chi phí truyền nối: 3000.
+    Tổng chi phí truyền: 5000 + 3000 = 8000.
+4.8
+Bước 1: Xác định kích thước sau khi áp dụng điều kiện
+
+    Áp dụng điều kiện trên PROJ:
+        PROJ (S3: 1000 hàng).
+        Với selectivity factor 0.5:
+            size(PROJ') = 1000 × 0.5 = 500 hàng (vẫn ở S3).
+
+Bước 2: Giảm kích thước bằng semijoin
+
+    Giảm ASG (S2) với PROJ' (S3):
+        Truyền PNO từ PROJ' (S3: 500) đến ASG (S2: 3000).
+        Chi phí truyền: 500.
+        Lọc ASG để giữ các hàng có PNO khớp với PROJ'.
+        Kích thước ASG' = size(ASG ⋈ PROJ'). Vì size(ASG ⋈ PROJ) = 1000 (khi PROJ là 1000), với PROJ' (500), giả định giảm tỷ lệ: size(ASG') = 1000 × (500/1000) = 500 hàng.
+    Giảm EMP (S1) với ASG' (S2):
+        Truyền ENO từ ASG' (S2: 500) đến EMP (S1: 2000).
+        Chi phí truyền: 500.
+        Lọc EMP để giữ các hàng có ENO khớp với ASG'.
+        Kích thước EMP' = size(EMP ⋈ ASG'). Vì size(EMP ⋈ ASG) = 2000 (khi ASG là 3000 trong Problem 4.7), với ASG' (500), giả định size(EMP') = 2000 × (500/3000) = 333 hàng.
+    Giảm PAY (S3) với EMP' (S1):
+        Truyền ENO từ EMP' (S1: 333) đến PAY (S3: 500).
+        Chi phí truyền: 333.
+        Lọc PAY để giữ các hàng có ENO khớp với EMP'.
+        Kích thước PAY' = size(PAY ⋈ EMP'). Theo giả định size(R ⋈ S) = max(size(R), size(S)), size(PAY') = max(500, 333) = 500 hàng.
+    Tổng chi phí truyền semijoin: 500 + 500 + 333 = 1333.
+
+Bước 3: Thực hiện nối
+
+    Quan hệ sau khi giảm:
+        PAY': S3 (500).
+        EMP': S1 (333).
+        ASG': S2 (500).
+        PROJ': S3 (500).
+    Chọn site S2 để thực hiện nối (vì ASG' chỉ có ở S2):
+        Truyền PAY' từ S3 (500) đến S2: 500 hàng.
+        Truyền EMP' từ S1 (333) đến S2: 333 hàng.
+        Truyền PROJ' từ S3 (500) đến S2: 500 hàng.
+        Tổng chi phí truyền nối: 500 + 333 + 500 = 1333.
+    Tổng chi phí truyền: 1333 (semijoin) + 1333 (nối) = 2666.
+
+Bước 4: Tính tổng thời gian
+
+    Chi phí truyền: 2666.
+    Chi phí xử lý:
+        Xử lý điều kiện trên PROJ: 1000 hàng.
+        Semijoin tại các site: Tổng dữ liệu xử lý ~ 3000 (ước lượng từ ASG, EMP, PAY).
+        Nối tại S2: Tổng dữ liệu xử lý ~ 500 (ước lượng từ ASG').
+        Tổng dữ liệu xử lý: 1000 + 3000 + 500 = 4500.
+        Truyền chậm hơn xử lý 100 lần, nên chi phí xử lý tương đương truyền: 4500 / 100 = 45.
+    Tổng thời gian: 2666 + 45 = 2711.
+
+Chương trình phân tán
+
+    Giảm PROJ tại S3:
+        Áp dụng điều kiện, PROJ' (S3: 500).
+    Semijoin:
+        ASG ⋉ PROJ': Truyền PNO từ S3 (500) đến S2, lọc ASG' (500).
+        EMP ⋉ ASG': Truyền ENO từ S2 (500) đến S1, lọc EMP' (333).
+        PAY ⋉ EMP': Truyền ENO từ S1 (333) đến S3, lọc PAY' (500).
+    Thực hiện nối tại S2:
+        Truyền PAY' từ S3 (500) đến S2.
+        Truyền EMP' từ S1 (333) đến S2.
+        Truyền PROJ' từ S3 (500) đến S2.
+        Thực hiện (PAY' ⋈ EMP' ⋈ ASG' ⋈ PROJ') tại S2.
+
+Kết quả
+
+Chương trình phân tán:
+
+    Giảm PROJ, thực hiện semijoin: ASG ⋉ PROJ', EMP ⋉ ASG', PAY ⋉ EMP'.
+    Thực hiện nối tại S2, với tổng chi phí truyền 2666 và tổng thời gian 2711.
+4.10
+(a) Tập C:
+
+    C1: R ⋈ S trên B, S ⋈ T trên D.
+    C2: σ_p áp dụng trên các bộ của R hoặc kết quả chứa R.
+    C3: Sử dụng index trên S.B và T.D.
+    C4: Eddy được phép thay đổi thứ tự toán tử tại thời điểm chạy.
+(b) Đồ thị G:
+R —— S —— T
+   B     D
+(c) Eddy-based QEP:
+
+    Eddy định tuyến: R ⋈ S → σ_p → S ⋈ T.
+    Sử dụng index trên S.B và T.D, linh hoạt điều chỉnh thứ tự dựa trên chi phí thực tế.
+
+(d) QEP với State Modules:
+
+    Sử dụng SM1 (σ_p), SM2 (R ⋈ S), SM3 (S ⋈ T).
+    Lợi ích: Tránh lặp lại, tái sử dụng kết quả, tăng tính thích nghi, hỗ trợ song song, giảm chi phí cho σ_p.
+4.11
+Cấu trúc dữ liệu đề xuất:
+
+    Priority Queue (Min-Heap): Lưu trữ (Tuple ID, Priority Score, Timestamp) để chọn nhanh bộ ưu tiên cao nhất.
+    Hash Table: Lưu trữ thông tin chi tiết {Tuple ID: {Tuple Data, State Bitmap, NOP, Timestamp}}.
+    Ưu tiên: Priority Score dựa trên số lượng toán tử đã xử lý (NOP), đảm bảo "produce first results earlier".
