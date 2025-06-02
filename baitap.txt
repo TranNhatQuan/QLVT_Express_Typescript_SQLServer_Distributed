@@ -1285,3 +1285,566 @@ Local Recovery Manager (LRM) - No-Fix/No-Flush
         Chỉ redo các giao dịch đã commit (dựa trên log).
         Không cần undo, vì No-Fix đảm bảo các thay đổi chưa commit không ảnh hưởng đến đĩa.
         Ghi lại bộ đệm ra đĩa sau redo.
+6.1
+Cảm ơn bạn đã cung cấp bài tập Problem 6.1 từ Chương 6 của cuốn sách Principles of Distributed Database Systems của M. Tamer Özsu và Patrick Valduriez. Mình sẽ phân tích và đưa ra các kịch bản/ứng dụng phù hợp cho từng trong bốn giao thức sao chép (replication protocols): Eager Centralized, Eager Distributed, Lazy Centralized, và Lazy Distributed. Mình sẽ giải thích lý do tại sao mỗi giao thức phù hợp hơn trong các tình huống đó. Hiện tại là 04:05 PM +07, ngày 02/06/2025 (Thứ Hai), và mình sẽ trả lời bằng tiếng Việt.
+Problem 6.1
+Đề bài
+
+Đối với mỗi trong bốn giao thức sao chép (eager centralized, eager distributed, lazy centralized, lazy distributed), đưa ra một kịch bản/ứng dụng mà cách tiếp cận này phù hợp hơn các cách tiếp cận khác. Giải thích lý do.
+Khái niệm các giao thức sao chép
+
+    Eager: Sao chép được thực hiện đồng thời (synchronous) với giao dịch, đảm bảo tính nhất quán mạnh (strong consistency) ngay lập tức.
+    Lazy: Sao chép được thực hiện trì hoãn (asynchronous), cho phép tính nhất quán cuối cùng (eventual consistency), nhưng có thể dẫn đến xung đột.
+    Centralized: Một site trung tâm (master) chịu trách nhiệm quản lý sao chép và cập nhật.
+    Distributed: Tất cả các site tham gia đều có vai trò ngang hàng (peer-to-peer), quản lý sao chép và cập nhật.
+
+Các giao thức cụ thể:
+
+    Eager Centralized: Một site master cập nhật tất cả bản sao đồng thời trong giao dịch.
+    Eager Distributed: Tất cả site cập nhật bản sao của nhau đồng thời trong giao dịch.
+    Lazy Centralized: Site master cập nhật bản sao sau khi giao dịch hoàn thành, các site khác nhận cập nhật trì hoãn.
+    Lazy Distributed: Tất cả site cập nhật bản sao của nhau một cách độc lập và trì hoãn.
+
+a. Eager Centralized
+
+    Kịch bản/Ứng dụng: Hệ thống quản lý ngân hàng tập trung, nơi một ngân hàng trung tâm quản lý tất cả tài khoản và giao dịch chuyển tiền giữa các chi nhánh.
+        Ví dụ: Ngân hàng X có trụ sở chính tại Hà Nội và các chi nhánh tại TP.HCM, Đà Nẵng. Mỗi giao dịch chuyển tiền giữa tài khoản phải được xử lý đồng thời tại tất cả chi nhánh.
+    Lý do:
+        Tính nhất quán mạnh: Eager Centralized đảm bảo rằng tất cả bản sao tài khoản được cập nhật cùng lúc, tránh tình trạng số dư không đồng bộ (inconsistent balances) ngay lập tức.
+        Quản lý tập trung: Trụ sở chính có thể kiểm soát toàn bộ quá trình, phù hợp với hệ thống ngân hàng yêu cầu tuân thủ nghiêm ngặt (compliance) và tránh lỗi.
+        Không phù hợp với Lazy: Lazy có thể dẫn đến sự khác biệt tạm thời giữa các chi nhánh, gây rủi ro tài chính.
+        Không phù hợp với Distributed: Distributed khó kiểm soát trong môi trường tập trung, vì mỗi chi nhánh không cần quyền tự chủ cao.
+
+b. Eager Distributed
+
+    Kịch bản/Ứng dụng: Hệ thống quản lý dữ liệu y tế phân tán giữa các bệnh viện trong một mạng lưới liên kết, nơi thông tin bệnh nhân (như hồ sơ chẩn đoán) cần được đồng bộ hóa ngay lập tức giữa các bệnh viện.
+        Ví dụ: Mạng lưới y tế toàn quốc với các bệnh viện tại Hà Nội, TP.HCM, và Cần Thơ, nơi bác sĩ tại bất kỳ bệnh viện nào cập nhật hồ sơ bệnh nhân và cần dữ liệu cập nhật tức thời.
+    Lý do:
+        Tính nhất quán mạnh: Eager Distributed đảm bảo rằng mọi thay đổi (ví dụ: kết quả xét nghiệm) được phản ánh đồng thời tại tất cả bệnh viện, quan trọng trong trường hợp khẩn cấp y tế.
+        Phân tán hiệu quả: Mỗi bệnh viện có thể đóng vai trò ngang hàng, giảm phụ thuộc vào một site trung tâm, phù hợp với mạng lưới phân tán rộng.
+        Không phù hợp với Lazy: Trì hoãn cập nhật có thể dẫn đến quyết định y tế sai lầm dựa trên dữ liệu cũ.
+        Không phù hợp với Centralized: Một site trung tâm có thể trở thành điểm nghẽn hoặc thất bại, gây gián đoạn trong hệ thống y tế phân tán.
+
+c. Lazy Centralized
+
+    Kịch bản/Ứng dụng: Hệ thống quản lý nội dung website (content management system) với một máy chủ trung tâm và nhiều máy chủ mirror (bản sao) tại các khu vực khác nhau.
+        Ví dụ: Một trang tin tức có máy chủ chính tại Hà Nội và các mirror tại TP.HCM, Đà Nẵng, nơi nội dung được cập nhật tại máy chủ chính và lan tỏa đến mirror sau đó.
+    Lý do:
+        Hiệu suất cao: Lazy Centralized cho phép máy chủ chính xử lý giao dịch nhanh hơn (không cần chờ tất cả mirror đồng bộ), cải thiện thời gian phản hồi cho người dùng.
+        Tính nhất quán cuối cùng: Đối với nội dung tĩnh (như bài viết tin tức), sự khác biệt tạm thời giữa máy chủ chính và mirror không ảnh hưởng nghiêm trọng, và người dùng chấp nhận sự đồng bộ cuối cùng.
+        Không phù hợp với Eager: Eager yêu cầu đồng bộ hóa tức thời, làm tăng độ trễ và chi phí cho các mirror không cần thiết.
+        Không phù hợp với Distributed: Quản lý nội dung tập trung tại một site chính là hiệu quả hơn là phân tán quyền kiểm soát.
+
+d. Lazy Distributed
+
+    Kịch bản/Ứng dụng: Hệ thống quản lý tài liệu hợp tác phân tán, như Google Docs hoặc các nền tảng chỉnh sửa tài liệu nhóm, nơi nhiều người dùng tại các địa điểm khác nhau chỉnh sửa tài liệu đồng thời.
+        Ví dụ: Một nhóm làm việc tại Hà Nội, TP.HCM, và nước ngoài cùng chỉnh sửa một tài liệu, với các thay đổi được đồng bộ hóa sau khi người dùng lưu.
+    Lý do:
+        Tính linh hoạt: Lazy Distributed cho phép các site (người dùng) chỉnh sửa độc lập, phù hợp với môi trường hợp tác nơi xung đột có thể được giải quyết thủ công (merge conflicts).
+        Tính sẵn sàng cao: Người dùng có thể tiếp tục làm việc ngay cả khi mạng chậm hoặc một site tạm thời mất kết nối, với đồng bộ hóa diễn ra sau đó.
+        Không phù hợp với Eager: Eager yêu cầu đồng bộ tức thời, gây gián đoạn nếu một site chậm hoặc thất bại.
+        Không phù hợp với Centralized: Một site trung tâm có thể trở thành điểm nghẽn, không phù hợp với hệ thống hợp tác phân tán
+6.2
+
+(a) Nhóm dịch vụ khách hàng
+Yêu cầu
+
+    Tải công việc: 80% truy vấn, 20% cập nhật.
+    Mỗi nhân viên cần truy cập dữ liệu của bất kỳ khách hàng nào, đòi hỏi truy cập toàn cục.
+    Cụm PC với cơ sở dữ liệu riêng → cần sao chép dữ liệu để tăng tốc truy vấn cục bộ.
+
+Cách sao chép dữ liệu
+
+    Sao chép toàn phần (Full Replication) cho các bảng ITEM và CUSTOMER:
+        ITEM: Thay đổi hiếm, truy vấn thường xuyên (giá sản phẩm). Sao chép toàn phần trên tất cả PC giúp truy vấn nhanh mà không cần liên lạc mạng.
+        CUSTOMER: Thông tin khách hàng cần truy cập toàn cục bởi mọi nhân viên. Sao chép toàn phần đảm bảo truy vấn nhanh, dù có cập nhật (thêm khách hàng mới, chỉnh sửa thông tin).
+    Sao chép phân mảnh (Partial Replication) cho các bảng STOCK, ORDER, ORDER-LINE, và CLIENT-ORDER:
+        STOCK: Phân mảnh theo Warehouse (kho). Mỗi PC tại một kho chỉ lưu trữ dữ liệu STOCK của kho đó, vì nhân viên tại kho thường chỉ cần kiểm tra hàng tồn tại kho của họ.
+        ORDER, ORDER-LINE, CLIENT-ORDER: Phân mảnh theo Warehouse. Mỗi PC lưu trữ các đơn hàng liên quan đến kho của mình, vì đơn hàng được đặt tại kho cụ thể và nhân viên tại kho đó xử lý.
+
+Giao thức kiểm soát bản sao
+
+    Lazy Centralized:
+        Lý do:
+            Tải truy vấn cao (80%): Lazy Centralized cho phép mỗi PC xử lý truy vấn cục bộ nhanh chóng mà không cần đồng bộ tức thời, cải thiện hiệu suất.
+            Cập nhật (20%): Cập nhật (đặt hàng, thanh toán) được thực hiện tại một site trung tâm (master), sau đó lan truyền đến các PC khác một cách trì hoãn (asynchronous). Điều này chấp nhận tính nhất quán cuối cùng (eventual consistency), phù hợp vì truy vấn chiếm ưu thế và sự khác biệt tạm thời không gây vấn đề nghiêm trọng (ví dụ: số lượng tồn kho có thể hơi lệch trong thời gian ngắn).
+            Quản lý đơn giản: Một site trung tâm (master) quản lý cập nhật, giảm xung đột so với phân tán.
+        Không phù hợp với Eager:
+            Eager (Centralized hoặc Distributed) yêu cầu đồng bộ tức thời, làm chậm truy vấn (80% tải) do phải chờ tất cả bản sao được cập nhật.
+        Không phù hợp với Lazy Distributed:
+            Lazy Distributed yêu cầu giải quyết xung đột phức tạp hơn (nhiều site cập nhật độc lập), không cần thiết khi tải cập nhật thấp và có thể quản lý tập trung.
+
+Triển khai
+
+    Một site trung tâm (master) tại trụ sở chính quản lý tất cả cập nhật.
+    Mỗi PC tại kho có bản sao cục bộ của dữ liệu liên quan đến kho đó (STOCK, ORDER, v.v.) và bản sao toàn phần của ITEM, CUSTOMER.
+    Cập nhật (đặt hàng, thanh toán) được gửi đến site trung tâm, sau đó lan truyền đến các PC khác định kỳ.
+
+(b) Phân tích bán hàng và hành vi khách hàng
+Yêu cầu
+
+    Ban quản lý cần phân tích bán hàng và hành vi khách hàng mỗi quý tài chính.
+    Ưu tiên: Quan sát dữ liệu bán hàng (ORDER, ORDER-LINE, CLIENT-ORDER) và tồn kho (STOCK) tại các kho, không cần cập nhật tức thời.
+    Hiệu suất đọc cao, không có hoặc rất ít cập nhật từ phía quản lý.
+
+Cách sao chép dữ liệu
+
+    Sao chép toàn phần (Full Replication) cho các bảng liên quan đến phân tích:
+        ORDER, ORDER-LINE, CLIENT-ORDER, STOCK: Sao chép toàn phần tại một cụm máy chủ phân tích (dành riêng cho quản lý), vì quản lý cần dữ liệu tổng hợp từ tất cả kho để phân tích bán hàng và tồn kho.
+        ITEM: Sao chép toàn phần để hỗ trợ phân tích giá sản phẩm và thông tin liên quan.
+        CUSTOMER: Sao chép toàn phần để phân tích hành vi khách hàng (ví dụ: khu vực khách hàng, mức tín dụng).
+    Không cần sao chép cục bộ tại kho: Dữ liệu phân tích được tập trung tại một cụm máy chủ quản lý, không cần phân mảnh theo kho.
+
+Giao thức kiểm soát bản sao
+
+    Lazy Centralized:
+        Lý do:
+            Ưu tiên đọc: Quản lý chủ yếu thực hiện truy vấn (phân tích), không cập nhật. Lazy Centralized cho phép cụm máy chủ phân tích giữ bản sao và truy vấn nhanh mà không cần đồng bộ tức thời.
+            Tính nhất quán cuối cùng: Dữ liệu có thể hơi cũ (vài giờ hoặc ngày), nhưng điều này chấp nhận được trong phân tích quý tài chính, vì không cần số liệu thời gian thực.
+            Quản lý tập trung: Site trung tâm (tại kho chính hoặc trụ sở) thu thập dữ liệu từ các kho, sau đó lan truyền đến cụm phân tích một cách trì hoãn.
+        Không phù hợp với Eager:
+            Eager (Centralized hoặc Distributed) làm chậm quá trình đọc do phải đồng bộ tức thời, không cần thiết khi quản lý không cập nhật dữ liệu.
+        Không phù hợp với Lazy Distributed:
+            Lazy Distributed phức tạp hơn do cần giải quyết xung đột, không cần thiết khi chỉ có đọc và dữ liệu được thu thập từ các kho bởi một site trung tâm.
+
+Triển khai
+
+    Mỗi kho định kỳ gửi dữ liệu cập nhật (STOCK, ORDER, v.v.) đến site trung tâm.
+    Site trung tâm tổng hợp và sao chép toàn phần dữ liệu đến cụm máy chủ phân tích.
+    Cụm máy chủ phân tích sử dụng dữ liệu này để chạy các truy vấn phân tích, không cần đồng bộ thời gian thực.
+6.3
+
+Phương pháp quản lý phân tán Replication Graph
+
+Cấu trúc và vai trò
+
+    Master: Thực hiện giao dịch cập nhật, tạo refresh transactions, và khởi tạo các nút trong replication graph.
+    Slaves: Áp dụng refresh transactions, tham gia xây dựng và duy trì replication graph.
+    Replication Graph:
+        Được phân tán: Mỗi site lưu trữ một phần của đồ thị (local subgraph) liên quan đến các giao dịch và bản sao tại site đó.
+        Các site giao tiếp để đồng bộ và kiểm tra đồ thị.
+
+Thuật toán quản lý phân tán
+text
+Procedure DistributedReplicationGraphManagement()
+    1. Initialize:
+       - Each site S (master or slave) maintains:
+         - LocalGraph[S] = {edges: {(T_i, S_j)}}  // Phần đồ thị cục bộ, chỉ chứa cạnh liên quan đến S_j
+         - TransactionQueue[S] = empty queue  // Hàng đợi refresh transactions tại S
+         - WriteSetTable[S] = {T_i: writeSet}  // Thông tin tập ghi của giao dịch
+         - AppliedTransactions[S] = empty set  // Giao dịch đã áp dụng tại S
+
+    2. Master: Create and Distribute Refresh Transactions
+       - When master executes update transaction T_i:
+         - Execute T_i on master replica
+         - On commit of T_i:
+           - Create refresh transaction T_i with writeSet(T_i)
+           - Attach timestamp TS(T_i) (based on commit order)
+           - For each data item x in writeSet(T_i):
+             - Determine sites S_j storing a replica of x
+             - Add edge (T_i, S_j) to LocalGraph[master]
+           - Broadcast T_i (with TS(T_i), writeSet(T_i)) to all slaves
+           - Update WriteSetTable[master][T_i] = writeSet(T_i)
+
+    3. Slaves: Receive and Process Refresh Transactions
+       - For each slave S receiving T_i from master:
+         - Add T_i to TransactionQueue[S]
+         - If S stores replicas of items in writeSet(T_i):
+           - Add edge (T_i, S) to LocalGraph[S]
+         - Update WriteSetTable[S][T_i] = writeSet(T_i)
+
+    4. Distributed Graph Construction and Cycle Detection
+       - Periodically or before applying T_i:
+         - Each slave S broadcasts LocalGraph[S] to all other sites
+         - Each site merges received LocalGraph into GlobalGraph[S]:
+           - GlobalGraph[S] = union of all LocalGraph
+         - Perform distributed cycle detection:
+           - Use a distributed depth-first search (DFS) algorithm:
+             - Each site S starts DFS from its nodes (T_i, S)
+             - Pass DFS token to neighboring sites based on edges
+             - If cycle detected (e.g., (T_i, S_1) -> (T_j, S_2) -> (T_i, S_1)):
+               - If T_i has committed at master but not at all slaves:
+                 - Abort current transaction T_k (if T_k caused the cycle)
+                 - Broadcast abort decision to all sites
+                 - Remove (T_k, S_j) edges from LocalGraph and GlobalGraph
+               - Else:
+                 - Wait until T_i commits at all slaves
+         - On receiving abort or completion of T_i:
+           - Remove (T_i, S_j) edges from LocalGraph and GlobalGraph
+
+    5. Apply Refresh Transactions
+       - For each slave S:
+         - Sort TransactionQueue[S] by TS(T_i) (timestamp order)
+         - For each T_i in sorted order:
+           - If (T_i, S) has no conflicts in GlobalGraph[S]:
+             - Apply T_i to local database
+             - Add T_i to AppliedTransactions[S]
+             - Remove (T_i, S) from LocalGraph[S] and GlobalGraph[S]
+             - Broadcast "Applied T_i at S" to all sites
+         - On receiving "Applied T_i at S_j":
+           - Update GlobalGraph to reflect T_i's completion at S_j
+
+    6. Cleanup
+       - Periodically remove old transactions from WriteSetTable, AppliedTransactions, and graphs
+End Procedure
+Giải thích chi tiết
+1. Khởi tạo
+
+    Mỗi site duy trì:
+        LocalGraph[S]: Chỉ chứa các cạnh (Ti,S)(Ti​,S), liên quan đến bản sao tại site SS.
+        TransactionQueue[S]: Lưu trữ refresh transactions chưa áp dụng.
+        WriteSetTable[S]: Lưu thông tin tập ghi để phát hiện xung đột.
+        AppliedTransactions[S]: Theo dõi giao dịch đã áp dụng tại site.
+
+2. Master tạo và phân phối Refresh Transactions
+
+    Master thực hiện giao dịch cập nhật TiTi​, commit, và tạo refresh transaction.
+    Gắn timestamp TS(Ti)TS(Ti​) theo thứ tự commit (monotonic counter + site ID).
+    Xác định các site SjSj​ lưu trữ bản sao của dữ liệu trong writeSet(Ti)writeSet(Ti​), thêm cạnh (Ti,Sj)(Ti​,Sj​) vào đồ thị.
+    Gửi TiTi​ đến tất cả slaves.
+
+3. Slaves nhận và xử lý
+
+    Slave thêm TiTi​ vào hàng đợi và kiểm tra xem nó có ảnh hưởng đến bản sao cục bộ không.
+    Nếu có, thêm cạnh (Ti,S)(Ti​,S) vào LocalGraph[S].
+
+4. Xây dựng và kiểm tra chu trình phân tán
+
+    Đồng bộ đồ thị:
+        Các site trao đổi LocalGraph để xây dựng GlobalGraph.
+    Phát hiện chu trình:
+        Sử dụng thuật toán DFS phân tán:
+            Mỗi site bắt đầu DFS từ các nút của mình.
+            Token DFS được truyền giữa các site theo cạnh.
+            Nếu phát hiện chu trình (ví dụ: (Ti,S1)→(Tj,S2)→(Ti,S1)(Ti​,S1​)→(Tj​,S2​)→(Ti​,S1​)), xử lý:
+                Nếu giao dịch gây chu trình (TkTk​) chưa commit tại tất cả slaves, hủy TkTk​.
+                Nếu không, chờ giao dịch khác trong chu trình hoàn tất.
+    Cập nhật đồ thị:
+        Loại bỏ giao dịch đã hủy hoặc đã hoàn tất tại tất cả slaves.
+
+5. Áp dụng Refresh Transactions
+
+    Sắp xếp giao dịch theo timestamp TS(Ti)TS(Ti​), đảm bảo thứ tự commit tại master.
+    Chỉ áp dụng TiTi​ nếu không có xung đột (dựa trên đồ thị).
+    Thông báo trạng thái "đã áp dụng" để các site khác cập nhật đồ thị.
+
+6. Dọn dẹp
+
+    Xóa các giao dịch cũ để giảm chi phí lưu trữ và tính toán.
+
+6.4
+
+(a) Gán phiếu và xác định ngưỡng đọc/ghi
+Gán phiếu
+
+Nguyên tắc:
+
+Mỗi bản sao của dữ liệu được gán phiếu.
+Vì $ x $ có 3 bản sao và $ y $ có 2 bản sao, ta gán phiếu dựa trên số lượng bản sao tại mỗi site.
+
+
+Gán phiếu cho từng site:
+
+Site 1: Có 2 bản sao của $ x $. Gán 2 phiếu cho $ x $.
+Site 4: Có 1 bản sao của $ x $. Gán 1 phiếu cho $ x $.
+Site 2: Có 1 bản sao của $ y $. Gán 1 phiếu cho $ y $.
+Site 3: Có 1 bản sao của $ y $. Gán 1 phiếu cho $ y $.
+
+
+Tổng phiếu:
+
+$ x $: $ V_x = 2 (Site 1) + 1 (Site 4) = 3 $.
+$ y $: $ V_y = 1 (Site 2) + 1 (Site 3) = 2 $.
+
+
+
+Xác định ngưỡng đọc/ghi
+
+Điều kiện quorum:
+
+$ V_r + V_w > V $
+$ V_w + V_w > V $
+
+
+Cho $ x $ ($ V_x = 3 $):
+
+$ V_w + V_w > 3 $: $ 2V_w > 3 $, nên $ V_w > 1.5 $. Vì $ V_w $ là số nguyên, $ V_w = 2 $.
+$ V_r + V_w > 3 $: $ V_r + 2 > 3 $, nên $ V_r > 1 $. Chọn $ V_r = 2 $.
+Kết quả:
+
+Read Quorum ($ V_{rx} $): 2 phiếu.
+Write Quorum ($ V_{wx} $): 2 phiếu.
+
+
+
+
+Cho $ y $ ($ V_y = 2 $):
+
+$ V_w + V_w > 2 $: $ 2V_w > 2 $, nên $ V_w > 1 $. Chọn $ V_w = 2 $.
+$ V_r + V_w > 2 $: $ V_r + 2 > 2 $, nên $ V_r > 0 $. Chọn $ V_r = 1 $.
+Kết quả:
+
+Read Quorum ($ V_{ry} $): 1 phiếu.
+Write Quorum ($ V_{wy} $): 2 phiếu.
+
+
+
+
+
+Kết luận phần (a)
+
+Phiếu:
+
+Site 1: 2 phiếu cho $ x $.
+Site 2: 1 phiếu cho $ y $.
+Site 3: 1 phiếu cho $ y $.
+Site 4: 1 phiếu cho $ x $.
+
+
+Ngưỡng:
+
+$ x $: $ V_{rx} = 2 $, $ V_{wx} = 2 $.
+$ y $: $ V_{ry} = 1 $, $ V_{wy} = 2 $.
+
+
+
+
+(b) Phân vùng mạng và điều kiện chấm dứt giao dịch cập nhật $ x $
+Giao dịch cập nhật $ x $:
+
+Cập nhật $ x $ bao gồm cả đọc và ghi.
+Yêu cầu:
+
+Đọc: Cần $ V_{rx} = 2 $ phiếu.
+Ghi: Cần $ V_{wx} = 2 $ phiếu.
+Vì giao dịch cập nhật bao gồm cả đọc và ghi, nhóm site cần thỏa mãn cả hai ngưỡng (tổng phiếu $ \geq 2 $).
+
+
+
+Các site có bản sao $ x $:
+
+Site 1 (2 phiếu), Site 4 (1 phiếu). Tổng phiếu: 3.
+
+Các trường hợp phân vùng mạng
+Có 4 site (Site 1, Site 2, Site 3, Site 4), nên các phân vùng có thể xảy ra bao gồm:
+
+1 phân vùng: Tất cả site cùng nhóm → Không có phân vùng thực sự.
+2 phân vùng: Chia thành 2 nhóm (ví dụ: {Site 1, Site 2} và {Site 3, Site 4}).
+3 phân vùng: Chia thành 3 nhóm (ví dụ: {Site 1}, {Site 2, Site 3}, {Site 4}).
+4 phân vùng: Mỗi site một nhóm.
+
+Ta sẽ xem xét các phân vùng có ý nghĩa đối với $ x $ (chỉ liên quan đến Site 1 và Site 4):
+
+Không phân vùng (Tất cả site cùng nhóm):
+
+Nhóm: {Site 1, Site 2, Site 3, Site 4}.
+Phiếu cho $ x $: Site 1 (2) + Site 4 (1) = 3.
+So với ngưỡng: $ 3 \geq V_{rx} = 2 $, $ 3 \geq V_{wx} = 2 $.
+Kết luận: Giao dịch cập nhật $ x $ có thể chấm dứt trong nhóm này.
+Điều kiện chấm dứt: Đọc và ghi trên ít nhất 2 phiếu (ví dụ: Site 1 hoặc Site 1 + Site 4).
+
+
+Phân vùng thành 2 nhóm:
+
+{Site 1, Site 2, Site 3} | {Site 4}:
+
+Nhóm 1: {Site 1, Site 2, Site 3} → Phiếu cho $ x $: Site 1 (2) = 2.
+Nhóm 2: {Site 4} → Phiếu cho $ x $: Site 4 (1) = 1.
+So với ngưỡng:
+
+Nhóm 1: $ 2 \geq V_{rx} = 2 $, $ 2 \geq V_{wx} = 2 $. Có thể chấm dứt.
+Nhóm 2: $ 1 < V_{rx} = 2 $, $ 1 < V_{wx} = 2 $. Không thể chấm dứt.
+
+
+Điều kiện chấm dứt (Nhóm 1): Đọc và ghi trên Site 1 (2 phiếu).
+
+
+{Site 1, Site 4} | {Site 2, Site 3}:
+
+Nhóm 1: {Site 1, Site 4} → Phiếu cho $ x $: Site 1 (2) + Site 4 (1) = 3.
+Nhóm 2: {Site 2, Site 3} → Phiếu cho $ x $: 0.
+So với ngưỡng:
+
+Nhóm 1: $ 3 \geq V_{rx} = 2 $, $ 3 \geq V_{wx} = 2 $. Có thể chấm dứt.
+Nhóm 2: $ 0 < V_{rx} = 2 $, $ 0 < V_{wx} = 2 $. Không thể chấm dứt.
+
+
+Điều kiện chấm dứt (Nhóm 1): Đọc và ghi trên ít nhất 2 phiếu (Site 1 hoặc Site 1 + Site 4).
+
+
+{Site 1} | {Site 2, Site 3, Site 4}:
+
+Nhóm 1: {Site 1} → Phiếu cho $ x $: Site 1 (2) = 2.
+Nhóm 2: {Site 2, Site 3, Site 4} → Phiếu cho $ x $: Site 4 (1) = 1.
+So với ngưỡng:
+
+Nhóm 1: $ 2 \geq V_{rx} = 2 $, $ 2 \geq V_{wx} = 2 $. Có thể chấm dứt.
+Nhóm 2: $ 1 < V_{rx} = 2 $, $ 1 < V_{wx} = 2 $. Không thể chấm dứt.
+
+
+Điều kiện chấm dứt (Nhóm 1): Đọc và ghi trên Site 1 (2 phiếu).
+
+
+
+
+Phân vùng thành 3 nhóm:
+
+{Site 1} | {Site 4} | {Site 2, Site 3}:
+
+Nhóm 1: {Site 1} → Phiếu cho $ x $: 2.
+Nhóm 2: {Site 4} → Phiếu cho $ x $: 1.
+Nhóm 3: {Site 2, Site 3} → Phiếu cho $ x $: 0.
+So với ngưỡng:
+
+Nhóm 1: $ 2 \geq V_{rx} = 2 $, $ 2 \geq V_{wx} = 2 $. Có thể chấm dứt.
+Nhóm 2: $ 1 < V_{rx} = 2 $, $ 1 < V_{wx} = 2 $. Không thể chấm dứt.
+Nhóm 3: $ 0 < V_{rx} = 2 $. Không thể chấm dứt.
+
+
+Điều kiện chấm dứt (Nhóm 1): Đọc và ghi trên Site 1 (2 phiếu).
+
+
+
+
+Phân vùng thành 4 nhóm:
+
+{Site 1} | {Site 2} | {Site 3} | {Site 4}:
+
+Nhóm 1: {Site 1} → Phiếu cho $ x $: 2.
+Nhóm 2: {Site 2} → Phiếu cho $ x $: 0.
+Nhóm 3: {Site 3} → Phiếu cho $ x $: 0.
+Nhóm 4: {Site 4} → Phiếu cho $ x $: 1.
+So với ngưỡng:
+
+Nhóm 1: $ 2 \geq V_{rx} = 2 $, $ 2 \geq V_{wx} = 2 $. Có thể chấm dứt.
+Nhóm 4: $ 1 < V_{rx} = 2 $, $ 1 < V_{wx} = 2 $. Không thể chấm dứt.
+Nhóm 2, 3: $ 0 < V_{rx} = 2 $. Không thể chấm dứt.
+
+
+Điều kiện chấm dứt (Nhóm 1): Đọc và ghi trên Site 1 (2 phiếu).
+
+
+
+
+
+Kết luận phần (b)
+
+Giao dịch cập nhật $ x $ chỉ có thể chấm dứt trong các nhóm chứa Site 1 (vì Site 1 có 2 phiếu, đủ ngưỡng $ V_{rx} = V_{wx} = 2 $).
+Điều kiện chấm dứt: Nhóm phải có ít nhất 2 phiếu (luôn cần Site 1).
+
+
+(c) Phân vùng mạng và điều kiện chấm dứt giao dịch cập nhật $ y $
+Giao dịch cập nhật $ y $:
+
+Cập nhật $ y $ bao gồm cả đọc và ghi.
+Yêu cầu:
+
+Đọc: Cần $ V_{ry} = 1 $ phiếu.
+Ghi: Cần $ V_{wy} = 2 $ phiếu.
+Vì giao dịch cập nhật bao gồm cả đọc và ghi, nhóm site cần thỏa mãn cả hai ngưỡng (tổng phiếu $ \geq 2 $).
+
+
+
+Các site có bản sao $ y $:
+
+Site 2 (1 phiếu), Site 3 (1 phiếu). Tổng phiếu: 2.
+
+Các trường hợp phân vùng mạng
+
+Không phân vùng (Tất cả site cùng nhóm):
+
+Nhóm: {Site 1, Site 2, Site 3, Site 4}.
+Phiếu cho $ y $: Site 2 (1) + Site 3 (1) = 2.
+So với ngưỡng: $ 2 \geq V_{ry} = 1 $, $ 2 \geq V_{wy} = 2 $.
+Kết luận: Giao dịch cập nhật $ y $ có thể chấm dứt.
+Điều kiện chấm dứt: Đọc trên ít nhất 1 phiếu (Site 2 hoặc Site 3), ghi trên cả Site 2 và Site 3 (2 phiếu).
+
+
+Phân vùng thành 2 nhóm:
+
+{Site 1, Site 2, Site 3} | {Site 4}:
+
+Nhóm 1: {Site 1, Site 2, Site 3} → Phiếu cho $ y $: Site 2 (1) + Site 3 (1) = 2.
+Nhóm 2: {Site 4} → Phiếu cho $ y $: 0.
+So với ngưỡng:
+
+Nhóm 1: $ 2 \geq V_{ry} = 1 $, $ 2 \geq V_{wy} = 2 $. Có thể chấm dứt.
+Nhóm 2: $ 0 < V_{ry} = 1 $. Không thể chấm dứt.
+
+
+Điều kiện chấm dứt (Nhóm 1): Đọc trên Site 2 hoặc Site 3 (1 phiếu), ghi trên cả Site 2 và Site 3 (2 phiếu).
+
+
+{Site 1, Site 4} | {Site 2, Site 3}:
+
+Nhóm 1: {Site 1, Site 4} → Phiếu cho $ y $: 0.
+Nhóm 2: {Site 2, Site 3} → Phiếu cho $ y $: Site 2 (1) + Site 3 (1) = 2.
+So với ngưỡng:
+
+Nhóm 1: $ 0 < V_{ry} = 1 $. Không thể chấm dứt.
+Nhóm 2: $ 2 \geq V_{ry} = 1 $, $ 2 \geq V_{wy} = 2 $. Có thể chấm dứt.
+
+
+Điều kiện chấm dứt (Nhóm 2): Đọc trên Site 2 hoặc Site 3, ghi trên cả Site 2 và Site 3.
+
+
+{Site 2} | {Site 1, Site 3, Site 4}:
+
+Nhóm 1: {Site 2} → Phiếu cho $ y $: 1.
+Nhóm 2: {Site 1, Site 3, Site 4} → Phiếu cho $ y $: Site 3 (1) = 1.
+So với ngưỡng:
+
+Nhóm 1: $ 1 \geq V_{ry} = 1 $, nhưng $ 1 < V_{wy} = 2 $. Không thể chấm dứt.
+Nhóm 2: $ 1 \geq V_{ry} = 1 $, nhưng $ 1 < V_{wy} = 2 $. Không thể chấm dứt.
+
+
+Kết luận: Giao dịch không thể chấm dứt ở bất kỳ nhóm nào.
+
+
+
+
+Phân vùng thành 3 nhóm:
+
+{Site 2} | {Site 3} | {Site 1, Site 4}:
+
+Nhóm 1: {Site 2} → Phiếu cho $ y $: 1.
+Nhóm 2: {Site 3} → Phiếu cho $ y $: 1.
+Nhóm 3: {Site 1, Site 4} → Phiếu cho $ y $: 0.
+So với ngưỡng:
+
+Nhóm 1: $ 1 \geq V_{ry} = 1 $, nhưng $ 1 < V_{wy} = 2 $. Không thể chấm dứt.
+Nhóm 2: $ 1 \geq V_{ry} = 1 $, nhưng $ 1 < V_{wy} = 2 $. Không thể chấm dứt.
+Nhóm 3: $ 0 < V_{ry} = 1 $. Không thể chấm dứt.
+
+
+Kết luận: Giao dịch không thể chấm dứt.
+
+
+
+
+Phân vùng thành 4 nhóm:
+
+{Site 1} | {Site 2} | {Site 3} | {Site 4}:
+
+Nhóm 1: {Site 1} → Phiếu cho $ y $: 0.
+Nhóm 2: {Site 2} → Phiếu cho $ y $: 1.
+Nhóm 3: {Site 3} → Phiếu cho $ y $: 1.
+Nhóm 4: {Site 4} → Phiếu cho $ y $: 0.
+So với ngưỡng:
+
+Nhóm 2: $ 1 \geq V_{ry} = 1 $, nhưng $ 1 < V_{wy} = 2 $. Không thể chấm dứt.
+Nhóm 3: $ 1 \geq V_{ry} = 1 $, nhưng $ 1 < V_{wy} = 2 $. Không thể chấm dứt.
+Nhóm 1, 4: $ 0 < V_{ry} = 1 $. Không thể chấm dứt.
+
+
+Kết luận: Giao dịch không thể chấm dứt.
+
+
+
+
+
+Kết luận phần (c)
+
+Giao dịch cập nhật $ y $ chỉ có thể chấm dứt trong các nhóm chứa cả Site 2 và Site 3 (vì cần $ V_{wy} = 2 $).
+Điều kiện chấm dứt: Nhóm phải có tổng cộng 2 phiếu (Site 2 + Site 3), đọc trên ít nhất 1 site, ghi trên cả 2 site.
+
