@@ -635,3 +635,653 @@ $ N_{ops} $: Số lượng thao tác (kích thước giao dịch).
 
 
 Mối quan hệ là tuyến tính, với độ dốc phụ thuộc vào độ phức tạp của mỗi thao tác (số lượng dữ liệu liên quan).
+
+5.10
+
+Procedure TransactionManager(Transaction T)
+    Input: Transaction T with operations (e.g., R(x), W(x), Commit, Abort)
+    Output: Execution result of T
+
+    1. Initialize:
+       - T.status = "ACTIVE"
+       - T.startTS = currentTimestamp()  // Gán timestamp khi bắt đầu
+       - T.readSet = empty set  // Tập các mục dữ liệu đã đọc
+       - T.writeSet = empty set  // Tập các mục dữ liệu sẽ ghi
+       - T.operations = list of operations in T
+       - T.participantSites = set of sites involved (based on data items)
+       - T.coordinatorSite = currentSite
+
+    2. Read Phase:
+       - For each operation op in T.operations:
+         - If op is R(x):
+           - Determine site s containing x
+           - Send ReadRequest(T, x) to Scheduler at site s
+           - Receive value of x
+           - Add x to T.readSet
+           - Store value locally for computation
+         - If op is W(x):
+           - Add x to T.writeSet
+           - Compute and store new value of x locally (in private workspace)
+
+    3. Validation Phase:
+       - T.validationTS = currentTimestamp()  // Timestamp tại thời điểm xác thực
+       - For each site s in participantSites:
+         - Send ValidationRequest(T, T.startTS, T.validationTS, T.readSet, T.writeSet) to Scheduler at site s
+         - Wait for ValidationResult(Yes/No) from Scheduler(s)
+       - If all ValidationResult = Yes:
+         - Proceed to Write Phase
+       - Else:
+         - Set T.status = "ABORTED"
+         - Send GlobalAbort(T) to all participantSites
+         - Return T.status
+
+    4. Write Phase:
+       - For each site s in participantSites:
+         - Send WriteRequest(T, T.writeSet) to Scheduler at site s
+         - Wait for WriteAck from Scheduler(s)
+       - If all WriteAck received:
+         - Send GlobalCommit(T) to all participantSites
+         - Set T.status = "COMMITTED"
+       - Else:
+         - Send GlobalAbort(T) to all participantSites
+         - Set T.status = "ABORTED"
+
+    5. Return T.status
+End Procedure
+
+Procedure Scheduler(site s)
+    Input: Requests from TM (ReadRequest, ValidationRequest, WriteRequest)
+    Output: Responses to TM
+
+    1. Initialize:
+       - DataStore = {dataItem: value}  // Dữ liệu tại site
+       - CommitLog = {transaction: {commitTS, readSet, writeSet}}  // Lịch sử giao dịch đã commit
+       - ActiveTransactions = empty set  // Giao dịch đang hoạt động
+
+    2. Handle ReadRequest(T, x):
+       - If x in DataStore:
+         - Send value of x to TM
+       - Else:
+         - Send ReadError to TM
+       - Add T to ActiveTransactions
+
+    3. Handle ValidationRequest(T, startTS, validationTS, readSet, writeSet):
+       - For each transaction Tj in CommitLog where Tj.commitTS > startTS and Tj.commitTS < validationTS:
+         - If Tj.writeSet intersects T.readSet:
+           - Send ValidationResult(No) to TM  // Xung đột: Tj ghi vào mục T đã đọc
+           - Return
+         - If Tj.writeSet intersects T.writeSet:
+           - Send ValidationResult(No) to TM  // Xung đột: Tj ghi vào mục T sẽ ghi
+           - Return
+       - Send ValidationResult(Yes) to TM
+
+    4. Handle WriteRequest(T, writeSet):
+       - For each (x, value) in writeSet:
+         - Update DataStore[x] = value
+       - Add T to CommitLog with {commitTS: validationTS, readSet, writeSet}
+       - Send WriteAck to TM
+
+    5. Cleanup:
+       - Periodically remove old entries from CommitLog (e.g., entries with commitTS older than any active transaction's startTS)
+       - Remove T from ActiveTransactions after commit/abort
+End Procedure
+
+5.12
+
+Lý do Serializability bị coi là hạn chế
+
+    Serializability chỉ dựa trên thứ tự xung đột (conflict order) giữa các thao tác đọc/ghi, mà không xem xét ngữ nghĩa ứng dụng hoặc các ràng buộc cụ thể.
+    Trong hệ thống phân tán, các lịch sử có thể duy trì tính nhất quán thông qua cơ chế khác (ví dụ: giao dịch bù trừ hoặc kiểm tra ứng dụng), nhưng bị từ chối bởi tiêu chí serializability do không có thứ tự tuần tự tương đương.
+
+Ví dụ 1: Giao dịch chuyển tiền với bù trừ (Compensating Transaction)
+
+Giả sử có hai site, Site 1 và Site 2, mỗi site quản lý một tài khoản ngân hàng (A tại Site 1, B tại Site 2). Tổng số tiền trong A và B phải luôn bằng 1000 đơn vị (ràng buộc ứng dụng). Hai giao dịch sau được thực thi đồng thời:
+
+    T1: Chuyển 200 từ A đến B.
+    T2: Chuyển 300 từ B đến A.
+
+Lịch sử phân tán (H):
+
+    Site 1: W1(A, 800), C1 (T1 ghi A = 800, commit).
+    Site 2: W2(B, 500), C2 (T2 ghi B = 500, commit).
+    Thực tế, hai giao dịch được thực thi song song, với các bước trung gian:
+        Ban đầu: A = 1000, B = 0.
+        T1 giảm A xuống 800, T2 tăng B lên 500 (tổng tạm thời = 1300).
+        T2 giảm B xuống 200, T1 tăng A lên 1000 (tổng tạm thời = 1200).
+        Sau commit: A = 800, B = 200 (tổng = 1000).
+
+Phân tích:
+
+    Tính nhất quán: Ràng buộc ứng dụng (tổng A + B = 1000) được duy trì, vì các thay đổi bù trừ nhau. Không có dữ liệu "dirty" vì tất cả commit đều hợp lệ.
+    Serializability:
+        Đồ thị ưu tiên (precedence graph): Không có cặp thao tác xung đột trực tiếp (vì W1(A) và W2(B) tác động lên các đối tượng khác nhau).
+        Tuy nhiên, nếu xem xét các bước trung gian, thứ tự thực tế không tương đương với bất kỳ thứ tự tuần tự nào (ví dụ: T1 → T2 hoặc T2 → T1 sẽ không tạo ra cùng kết quả trung gian).
+        Kết luận: H không serializable, vì không có lịch sử tuần tự tương đương về xung đột (do thiếu thông tin trung gian trong lịch sử cuối cùng).
+
+5.13
+Termination Protocol trong 2PC với Distributed Communication Topology
+
+Giao thức chấm dứt cần giải quyết hai trường hợp chính: (1) Coordinator thất bại và (2) Participant thất bại.
+1. Coordinator Failure
+
+    Vấn đề: Nếu coordinator thất bại trong khi thực thi 2PC, các participant không nhận được thông điệp Commit hoặc Abort, dẫn đến trạng thái chặn.
+    Termination Protocol:
+        Election of New Coordinator:
+            Các site còn lại phát hiện coordinator thất bại (thông qua timeout hoặc giao thức phát hiện sự cố).
+            Sử dụng một giao thức bầu chọn (election protocol) để chọn coordinator mới. Ví dụ, trong cấu trúc cây:
+                Nếu coordinator là root, các site con (children) bắt đầu bầu chọn một site mới làm root (dựa trên ID cao nhất, ưu tiên, hoặc độ trễ thấp nhất).
+                Trong cấu trúc vòng, site kế tiếp trong vòng đảm nhận vai trò coordinator.
+        State Collection:
+            Coordinator mới gửi yêu cầu trạng thái (StateRequest) đến tất cả participant còn lại.
+            Mỗi participant trả lời trạng thái của mình:
+                Prepared (đã gửi Yes trong Prepare Phase).
+                Aborted (đã gửi No hoặc đã nhận Abort).
+                Unknown (chưa nhận được Prepare).
+        Decision Making:
+            Nếu tất cả participant trả lời Prepared, coordinator mới gửi Commit.
+            Nếu có bất kỳ Aborted hoặc Unknown, coordinator gửi Abort.
+        Propagation:
+            Coordinator mới gửi quyết định (Commit hoặc Abort) đến tất cả participant thông qua cấu trúc liên lạc (ví dụ: lan truyền qua cây hoặc vòng).
+    Thảo luận:
+        Timeout: Các participant sử dụng timeout để phát hiện coordinator thất bại, nhưng timeout phải đủ dài để tránh quyết định sai (false positives).
+        Consistency: Giao thức bầu chọn phải đảm bảo chỉ có một coordinator mới được chọn, tránh trường hợp nhiều coordinator đưa ra quyết định mâu thuẫn.
+
+2. Participant Failure
+
+    Vấn đề: Nếu một participant thất bại:
+        Trong Prepare Phase: Coordinator không nhận được phản hồi từ participant, dẫn đến nguy cơ chặn.
+        Trong Commit Phase: Participant không nhận được quyết định Commit/Abort.
+    Termination Protocol:
+        Coordinator Handling Participant Failure:
+            Prepare Phase:
+                Coordinator sử dụng timeout để phát hiện participant thất bại.
+                Nếu không nhận được phản hồi từ participant sau timeout, coordinator coi đó là No và gửi Abort toàn cục.
+            Commit Phase:
+                Nếu participant thất bại sau khi gửi Yes nhưng trước khi nhận Commit, các site khác vẫn có thể tiếp tục (participant thất bại sẽ phục hồi sau).
+        Participant Handling Coordinator Failure:
+            Nếu participant không nhận được quyết định sau timeout, nó phối hợp với các site khác:
+                Gửi yêu cầu trạng thái (StateRequest) đến các site láng giềng (theo cấu trúc liên lạc).
+                Nếu bất kỳ site nào đã nhận Commit hoặc Abort, participant áp dụng quyết định đó.
+                Nếu không site nào biết trạng thái, bầu chọn coordinator mới (như trên).
+        Distributed Decision:
+            Trong cấu trúc cây, các site con của participant thất bại gửi yêu cầu trạng thái lên site cha.
+            Nếu site cha biết trạng thái (đã nhận Commit/Abort), lan truyền xuống.
+            Nếu không, site cha tiếp tục hỏi lên đến root hoặc coordinator mới.
+
+Đặc điểm của Termination Protocol
+
+    Non-Blocking (giảm chặn): Giao thức chấm dứt giúp các site còn lại đưa ra quyết định mà không cần chờ site thất bại phục hồi, giảm trạng thái chặn.
+    Consistency: Đảm bảo tất cả site còn lại đồng ý trên một quyết định (commit hoặc abort), duy trì tính nhất quán.
+    Overhead: Bầu chọn coordinator mới và lan truyền trạng thái gây thêm chi phí liên lạc, đặc biệt trong cấu trúc phức tạp như mesh.
+Kết luận
+
+Giao thức chấm dứt trong 2PC với cấu trúc liên lạc phân tán dựa vào bầu chọn coordinator mới và phối hợp trạng thái giữa các site để xử lý sự cố. Điều này đảm bảo tính nhất quán và giảm chặn, nhưng tăng chi phí liên lạc.
+
+5.14
+
+Thiết kế giao thức 3PC với Linear Communication Topology
+Tham số
+
+    Coordinator: Site đầu tiên trong chuỗi (ví dụ: S1).
+    Participants: Các site còn lại (S2, S3, ..., Sn).
+    Trạng thái: Mỗi site có thể ở trạng thái INIT, PREPARED, PRE-COMMITTED, COMMITTED, hoặc ABORTED.
+
+Procedure ThreePhaseCommit(site S)
+    Input: Transaction T, site ID, predecessor, successor
+    Output: Final state of T (COMMITTED or ABORTED)
+
+    1. Initialize:
+       - S.state = "INIT"
+       - S.vote = "UNDECIDED"
+       - S.predecessor = previous site in chain (null for coordinator)
+       - S.successor = next site in chain (null for last site)
+
+    2. Prepare Phase:
+       - If S is Coordinator (e.g., S1):
+         - Send Prepare(T) to S.successor
+         - Wait for PrepareAck or Abort from all participants
+       - Else (Participant):
+         - Receive Prepare(T) from S.predecessor
+         - If local data can be committed:
+           - Set S.vote = "Yes"
+           - Send PrepareAck(T) to S.successor
+         - Else:
+           - Set S.vote = "No"
+           - Send Abort(T) to S.predecessor
+           - Set S.state = "ABORTED"
+           - Return "ABORTED"
+
+    3. Pre-Commit Phase:
+       - If S is Coordinator:
+         - If all PrepareAck received:
+           - Set S.state = "PRE-COMMITTED"
+           - Send PreCommit(T) to S.successor
+         - Else if Abort received:
+           - Send GlobalAbort(T) to S.successor
+           - Set S.state = "ABORTED"
+           - Return "ABORTED"
+       - Else (Participant):
+         - Receive PreCommit(T) from S.predecessor
+         - Set S.state = "PRE-COMMITTED"
+         - Send PreCommitAck(T) to S.successor
+         - If S.successor is null (last site):
+           - Send PreCommitAck(T) back to S.predecessor
+
+    4. Commit Phase:
+       - If S is Coordinator:
+         - Receive PreCommitAck from last site (propagated back)
+         - Send GlobalCommit(T) to S.successor
+         - Set S.state = "COMMITTED"
+       - Else (Participant):
+         - Receive GlobalCommit(T) from S.predecessor
+         - Perform local commit
+         - Set S.state = "COMMITTED"
+         - Send CommitAck(T) to S.successor
+         - If S.successor is null:
+           - Send CommitAck(T) back to S.predecessor
+
+    5. Termination Protocol (Site Failure):
+       - If S.predecessor fails (timeout):
+         - If S.state = "PRE-COMMITTED":
+           - Send GlobalCommit(T) to S.successor
+           - Set S.state = "COMMITTED"
+         - Else if S.state = "INIT" or "PREPARED":
+           - Send Abort(T) to S.successor
+           - Set S.state = "ABORTED"
+       - If S.successor fails (timeout):
+         - Wait for recovery or use alternate path (if available)
+         - Propagate decision back to S.predecessor when successor recovers
+End Procedure
+
+Chi tiết các pha
+
+    Prepare Phase:
+        Coordinator (S1) gửi Prepare(T) qua chuỗi (S1 → S2 → S3 → ...).
+        Mỗi participant kiểm tra khả năng commit và gửi PrepareAck hoặc Abort ngược lại.
+        Nếu có Abort, chuỗi dừng và lan truyền Abort ngược về coordinator.
+    Pre-Commit Phase:
+        Nếu tất cả PrepareAck, coordinator gửi PreCommit(T) qua chuỗi.
+        Mỗi site chuyển sang trạng thái PRE-COMMITTED và xác nhận bằng PreCommitAck, lan truyền ngược về coordinator.
+        Trạng thái PRE-COMMITTED cho phép các site tự động commit nếu coordinator thất bại.
+    Commit Phase:
+        Sau khi nhận PreCommitAck từ cuối chuỗi, coordinator gửi GlobalCommit(T).
+        Mỗi site commit cục bộ, gửi CommitAck ngược lại, và chuỗi hoàn tất.
+
+Termination Protocol khi Site Failure
+
+    Coordinator Failure:
+        Nếu S1 thất bại sau PreCommit, các site đã ở PRE-COMMITTED sẽ tự động gửi GlobalCommit qua chuỗi, dựa trên trạng thái đồng thuận trước đó.
+    Participant Failure:
+        Nếu S2 thất bại trong Prepare Phase, S3 và các site sau nhận Abort từ S1.
+        Nếu S2 thất bại sau PreCommit, S3 có thể tiếp tục gửi GlobalCommit nếu đã nhận PreCommit.
+    Recovery:
+        Site thất bại khi phục hồi sẽ hỏi trạng thái từ S.predecessor hoặc S.successor, và áp dụng quyết định đã lan truyền.
+5.15
+Procedure Centralized3PCTerminationProtocol(site S)
+    Input: Transaction T, site role (Coordinator or Participant), list of participants
+    Output: Final state of T (COMMITTED or ABORTED)
+
+    1. Initialize:
+       - S.state = current state (INIT, PREPARED, PRE-COMMITTED, COMMITTED, ABORTED)
+       - S.isCoordinator = true if S is coordinator, false otherwise
+       - S.participants = list of participant sites
+       - S.timeout = predefined timeout value
+
+    2. Detect Failure:
+       - If S.isCoordinator:
+         - If S.state = PREPARED or PRE-COMMITTED and no decision sent (e.g., due to crash):
+           - Set recoveryFlag = true
+           - Wait for recovery or timeout
+       - Else (Participant):
+         - If no message from coordinator after timeout:
+           - Set recoveryFlag = true
+
+    3. Modified Termination Phase:
+       - If S.isCoordinator and recoveryFlag:
+         - Send StateRequest(T) to all participants in S.participants
+         - Wait for StateResponse(state) from each participant
+         - Collect states into stateList
+         - Determine global decision:
+           - If all StateResponse = PREPARED or PRE-COMMITTED:
+             - Set S.decision = "COMMITTED"
+             - Send GlobalCommit(T) to all participants
+           - Else if any StateResponse = ABORTED or INIT:
+             - Set S.decision = "ABORTED"
+             - Send GlobalAbort(T) to all participants
+           - Else (mixed states or missing responses):
+             - Set S.decision = "ABORTED"  // Conservative approach
+             - Send GlobalAbort(T) to all participants
+         - Update S.state = S.decision
+       - Else (Participant and recoveryFlag):
+         - Receive StateRequest(T) from coordinator
+         - Send StateResponse(S.state) to coordinator
+         - Wait for GlobalCommit(T) or GlobalAbort(T)
+         - If GlobalCommit(T) received:
+           - Set S.state = "COMMITTED"
+         - Else if GlobalAbort(T) received:
+           - Set S.state = "ABORTED"
+
+    4. Handle Participant Failure:
+       - If S.isCoordinator and no StateResponse from participant P after timeout:
+         - Assume P.state = INIT (conservative)
+         - Proceed with decision based on remaining responses
+       - If S is Participant and successor fails:
+         - Wait for coordinator recovery or alternate communication
+
+    5. Return S.state
+End Procedure
+Chi tiết các bước
+
+    Detect Failure:
+        Coordinator hoặc participant phát hiện sự cố qua timeout hoặc không nhận được thông điệp mong đợi.
+        recoveryFlag kích hoạt giao thức chấm dứt.
+    Modified Termination Phase:
+        Coordinator Action:
+            Gửi StateRequest đến tất cả participant thay vì phát tán trạng thái của mình.
+            Thu thập StateResponse từ các participant, bao gồm trạng thái hiện tại (INIT, PREPARED, PRE-COMMITTED, COMMITTED, ABORTED).
+            Quyết định dựa trên trạng thái thu thập được:
+                Nếu tất cả ở PREPARED hoặc PRE-COMMITTED, gửi GlobalCommit.
+                Nếu có bất kỳ ABORTED hoặc INIT, gửi GlobalAbort.
+                Nếu thiếu phản hồi, chọn ABORT để đảm bảo an toàn (conservative approach).
+        Participant Action:
+            Nhận StateRequest, gửi lại trạng thái hiện tại.
+            Chờ quyết định từ coordinator và áp dụng.
+    Handle Participant Failure:
+        Nếu participant không phản hồi, coordinator coi đó là trạng thái INIT (chưa chuẩn bị), dẫn đến abort để tránh mâu thuẫn.
+        Participant không cần hành động chủ động khi coordinator thất bại, vì coordinator sẽ thu thập trạng thái khi phục hồi.
+
+5.18
+
+Procedure LRM_TransactionProcessing(Transaction T)
+    Input: Transaction T with operations (e.g., R(x), W(x), Commit, Abort)
+    Output: Execution result of T
+
+    1. Initialize:
+       - Log = empty list  // Nhật ký lưu trữ bản ghi
+       - Buffer = {dataItem: value}  // Bộ đệm lưu trữ các thay đổi tạm thời
+       - StableStorage = {dataItem: value}  // Lưu trữ ổn định trên đĩa
+
+    2. For each operation op in T.operations:
+       - If op is R(x):
+         - If x in Buffer:
+           - Return Buffer[x]
+         - Else if x in StableStorage:
+           - Load x into Buffer
+           - Return Buffer[x]
+         - Else:
+           - Return error (x not found)
+       - If op is W(x, value):
+         - Write log record: <T, W, x, oldValue, newValue> to Log
+         - Update Buffer[x] = newValue
+         - // No-Fix: Do not write to StableStorage yet
+         - // No-Flush: Do not force Buffer to disk
+
+    3. Commit/Abort Handling:
+       - If T requests Commit:
+         - Write log record: <T, Commit> to Log
+         - Append Log to StableStorage (force log to disk)
+         - // No-Flush: Do not force Buffer to StableStorage
+         - Set T.status = "COMMITTED"
+         - Periodically flush Buffer to StableStorage (asynchronously)
+       - If T requests Abort:
+         - Write log record: <T, Abort> to Log
+         - Discard Buffer changes for T (revert to old values if needed)
+         - Append Log to StableStorage
+         - Set T.status = "ABORTED"
+
+    4. Return T.status
+End Procedure
+
+Procedure LRM_Recovery()
+    Input: Log, StableStorage, Buffer
+    Output: Restored state of StableStorage
+
+    1. Initialize:
+       - Buffer = empty  // Reset buffer
+       - RedoList = empty  // List of committed transactions to redo
+
+    2. Analyze Log:
+       - Read Log from StableStorage
+       - For each log record in Log (from oldest to newest):
+         - If record is <T, Commit>:
+           - Add T to RedoList
+         - If record is <T, Abort>:
+           - Skip T (no action needed, since No-Fix ensures uncommitted changes are not on disk)
+
+    3. Redo Phase:
+       - For each transaction T in RedoList:
+         - For each log record <T, W, x, oldValue, newValue>:
+           - Load x from StableStorage into Buffer if not already loaded
+           - Update Buffer[x] = newValue
+       - Flush Buffer to StableStorage (force all changes to disk)
+
+    4. Cleanup:
+       - Clear Buffer
+       - Log new checkpoint: <Checkpoint> to StableStorage
+       - Truncate Log (remove old entries before checkpoint)
+
+    5. Return "Recovery Complete"
+End Procedure
+
+Giải thích thuật toán
+Transaction Processing
+
+    Read Operation: Đọc từ bộ đệm nếu có, nếu không thì đọc từ đĩa. Không cần khóa vì chiến lược No-Fix/No-Flush dựa vào log để phục hồi.
+    Write Operation:
+        Ghi log trước (Write-Ahead Logging - WAL) để đảm bảo khả năng redo.
+        Cập nhật bộ đệm, nhưng không ghi ra đĩa (No-Fix).
+        Không ép bộ đệm ra đĩa ngay (No-Flush).
+    Commit/Abort:
+        Commit: Ghi log commit, nhưng không ép bộ đệm ra đĩa ngay. Thay đổi được ghi ra đĩa định kỳ (asynchronously).
+        Abort: Hủy thay đổi trong bộ đệm, không cần undo trên đĩa (vì No-Fix).
+
+Recovery After Crash
+
+    Analyze Log:
+        Xác định các giao dịch đã commit (cần redo).
+        Bỏ qua các giao dịch chưa commit (vì No-Fix đảm bảo chúng không ảnh hưởng đến đĩa).
+    Redo Phase:
+        Chỉ áp dụng lại các thay đổi của giao dịch đã commit.
+        Cập nhật bộ đệm và ghi ra đĩa sau khi hoàn tất redo.
+    Cleanup:
+        Đặt checkpoint để giảm chi phí cho lần phục hồi sau.
+        Xóa log cũ để tiết kiệm không gian.
+5.19
+1. Transaction Manager (TM)
+
+TM tại mỗi site quản lý vòng đời giao dịch, gửi yêu cầu khóa đến Scheduler, và phối hợp với LRM để ghi log và xử lý commit/abort.
+
+Procedure TransactionManager(Transaction T)
+    Input: Transaction T with operations (e.g., R(x), W(x), Commit, Abort)
+    Output: Execution result of T
+
+    1. Initialize:
+       - T.status = "ACTIVE"
+       - T.operations = list of operations in T
+       - T.lockRequests = empty queue
+       - T.site = current site
+
+    2. For each operation op in T.operations:
+       - If op is R(x) or W(x):
+         - Send LockRequest(T, op, x) to Centralized Scheduler
+         - Add request to T.lockRequests
+         - Wait for LockGranted or LockDenied from Scheduler
+         - If LockDenied:
+             - Wait (block T until lock is available)
+             - Retry LockRequest
+         - If LockGranted:
+             - If op is R(x):
+                 - Send ReadRequest(T, x) to LRM at T.site
+                 - Receive value of x from LRM
+             - If op is W(x, value):
+                 - Send WriteRequest(T, x, value) to LRM at T.site
+
+    3. Commit/Abort Handling:
+       - If T requests Commit:
+         - Send PrepareToCommit(T) to all participant sites (if distributed)
+         - Wait for Vote(Yes/No) from each site
+         - If all Vote = Yes:
+             - Send CommitRequest(T) to LRM
+             - Send UnlockRequest(T, all locks) to Scheduler
+             - Set T.status = "COMMITTED"
+         - Else:
+             - Send AbortRequest(T) to LRM
+             - Send UnlockRequest(T, all locks) to Scheduler
+             - Set T.status = "ABORTED"
+       - If T requests Abort:
+         - Send AbortRequest(T) to LRM
+         - Send UnlockRequest(T, all locks) to Scheduler
+         - Set T.status = "ABORTED"
+
+    4. Return T.status
+End Procedure
+2. Scheduler (Centralized Two-Phase Locking)
+
+Scheduler trung tâm quản lý tất cả các khóa, đảm bảo tính serializability thông qua 2PL.
+
+Procedure Scheduler()
+    Input: Requests from TM (LockRequest, UnlockRequest)
+    Output: LockGranted, LockDenied
+
+    1. Initialize:
+       - LockTable = {dataItem: {lockType, transactionList}}
+       - lockType = {READ, WRITE}
+
+    2. Handle LockRequest(T, op, x):
+       - If op is R(x):
+         - If LockTable[x] is empty or lockType = READ:
+             - Add T to LockTable[x].transactionList
+             - Set LockTable[x].lockType = READ
+             - Send LockGranted(T, x) to TM
+         - Else if LockTable[x].lockType = WRITE and T not in transactionList:
+             - Send LockDenied(T, x) to TM
+             - Block T until lock is available
+         - Else (WRITE lock by T):
+             - Send LockGranted(T, x) to TM
+       - If op is W(x):
+         - If LockTable[x] is empty:
+             - Add T to LockTable[x].transactionList
+             - Set LockTable[x].lockType = WRITE
+             - Send LockGranted(T, x) to TM
+         - Else if LockTable[x].lockType = READ or WRITE and T not in transactionList:
+             - Send LockDenied(T, x) to TM
+             - Block T until lock is available
+         - Else (WRITE lock by T):
+             - Send LockGranted(T, x) to TM
+
+    3. Handle UnlockRequest(T, x):
+       - If T in LockTable[x].transactionList:
+           - Remove T from LockTable[x].transactionList
+           - If LockTable[x].transactionList is empty:
+               - Remove x from LockTable
+               - Send LockReleased(x) to TM
+           - Else if LockTable[x].lockType = READ:
+               - Check for pending WRITE requests
+               - Grant to highest priority T
+           - Else (WRITE):
+               - Grant to next T in queue
+       - Notify blocked transactions if locks are available
+
+    4. Enforce 2PL:
+       - After first UnlockRequest(T, x), disallow new LockRequest(T, y)
+End Procedure
+3. Local Recovery Manager (LRM) - No-Fix/No-Flush
+
+LRM quản lý việc đọc/ghi dữ liệu tại site cục bộ và phục hồi sau sự cố, sử dụng chiến lược No-Fix/No-Flush.
+
+Procedure LRM_TransactionProcessing(Transaction T)
+    Input: Transaction T with requests (ReadRequest, WriteRequest, CommitRequest, AbortRequest)
+    Output: Execution result of T
+
+    1. Initialize:
+       - Log = empty list
+       - Buffer = {dataItem: value}
+       - StableStorage = {dataItem: value}
+
+    2. Handle ReadRequest(T, x):
+       - If x in Buffer:
+           - Return Buffer[x]
+       - Else if x in StableStorage:
+           - Load x into Buffer
+           - Return Buffer[x]
+       - Else:
+           - Return error (x not found)
+
+    3. Handle WriteRequest(T, x, value):
+       - Write log record: <T, W, x, oldValue, newValue> to Log
+       - Update Buffer[x] = newValue
+       - // No-Fix: Do not write to StableStorage yet
+       - // No-Flush: Do not force Buffer to disk
+
+    4. Handle CommitRequest(T):
+       - Write log record: <T, Commit> to Log
+       - Append Log to StableStorage (force log to disk)
+       - // No-Flush: Do not force Buffer to StableStorage
+       - Periodically flush Buffer to StableStorage (asynchronously)
+       - Return "COMMITTED"
+
+    5. Handle AbortRequest(T):
+       - Write log record: <T, Abort> to Log
+       - Discard Buffer changes for T (revert to old values if needed)
+       - Append Log to StableStorage
+       - Return "ABORTED"
+End Procedure
+
+Procedure LRM_Recovery()
+    Input: Log, StableStorage, Buffer
+    Output: Restored state of StableStorage
+
+    1. Initialize:
+       - Buffer = empty
+       - RedoList = empty
+
+    2. Analyze Log:
+       - Read Log from StableStorage
+       - For each log record in Log (from oldest to newest):
+           - If record is <T, Commit>:
+               - Add T to RedoList
+           - If record is <T, Abort>:
+               - Skip T (no action needed)
+
+    3. Redo Phase:
+       - For each transaction T in RedoList:
+           - For each log record <T, W, x, oldValue, newValue>:
+               - Load x from StableStorage into Buffer if not already loaded
+               - Update Buffer[x] = newValue
+       - Flush Buffer to StableStorage
+
+    4. Cleanup:
+       - Clear Buffer
+       - Log new checkpoint: <Checkpoint> to StableStorage
+       - Truncate Log (remove old entries before checkpoint)
+
+    5. Return "Recovery Complete"
+End Procedure
+
+Giải thích thuật toán
+Transaction Manager (TM)
+
+    Lock Management: Gửi yêu cầu khóa đến Scheduler trung tâm, chờ LockGranted trước khi thực hiện thao tác.
+    Operation Execution: Gửi yêu cầu đọc/ghi đến LRM sau khi có khóa.
+    Commit/Abort: Phối hợp với các site (nếu phân tán) qua 2PC, gửi yêu cầu commit/abort đến LRM, và thả khóa qua Scheduler.
+    TM đảm bảo tuân thủ 2PL bằng cách xin khóa trước và thả khóa sau commit/abort.
+
+Scheduler (Centralized 2PL)
+
+    Lock Handling:
+        READ lock: Cho phép nhiều giao dịch đọc cùng lúc, nhưng chặn WRITE.
+        WRITE lock: Chỉ cho một giao dịch, chặn cả READ và WRITE từ giao dịch khác.
+    2PL Enforcement: Sau khi thả khóa đầu tiên, không cho phép xin khóa mới (Shrinking Phase).
+    Scheduler trung tâm đảm bảo tính serializability toàn cục, ngay cả trong hệ thống phân tán.
+
+Local Recovery Manager (LRM) - No-Fix/No-Flush
+
+    Transaction Processing:
+        Đọc từ bộ đệm hoặc đĩa.
+        Ghi: Cập nhật bộ đệm, ghi log, nhưng không ghi ra đĩa ngay (No-Fix/No-Flush).
+        Commit: Ghi log commit, không ép bộ đệm ra đĩa ngay.
+        Abort: Hủy thay đổi trong bộ đệm, không cần undo trên đĩa.
+    Recovery:
+        Chỉ redo các giao dịch đã commit (dựa trên log).
+        Không cần undo, vì No-Fix đảm bảo các thay đổi chưa commit không ảnh hưởng đến đĩa.
+        Ghi lại bộ đệm ra đĩa sau redo.
