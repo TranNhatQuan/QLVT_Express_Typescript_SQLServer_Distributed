@@ -245,3 +245,393 @@ Cấu trúc dữ liệu đề xuất:
     Priority Queue (Min-Heap): Lưu trữ (Tuple ID, Priority Score, Timestamp) để chọn nhanh bộ ưu tiên cao nhất.
     Hash Table: Lưu trữ thông tin chi tiết {Tuple ID: {Tuple Data, State Bitmap, NOP, Timestamp}}.
     Ưu tiên: Priority Score dựa trên số lượng toán tử đã xử lý (NOP), đảm bảo "produce first results earlier".
+5.1
+H1 và H4 là conflict equivalent.
+H3 và H4 là conflict equivalent.
+Các cặp khác (H1 vs H2, H1 vs H3, H2 vs H3, H2 vs H4) không conflict equivalent.
+5.2
+H1: Serializable (thứ tự tuần tự: T2 → T1 → T3).
+H2: Không serializable (có chu trình T1 → T2 → T1).
+H3: Serializable (thứ tự tuần tự: T2 → T1 → T3).
+H4: Serializable (thứ tự tuần tự: T2 → T1 → T3).
+5.3
+H = {L1(x), R1(x), U1(x), L1(y), W1(y), C1, L2(x), R2(x), L2(y), W2(y), C2}
+Basic 2PL: Chấp nhận, vì tuân thủ quy tắc hai pha.
+Strict 2PL: Không chấp nhận, vì T1 thả khóa x (U1(x)) trước khi commit (C1).
+5.4
+H1: Không recoverable (T3 đọc từ T2, nhưng C3 ≺H C2).
+H2: Không recoverable (T1 đọc từ T2, nhưng C2 ≺H C1).
+H3: Không recoverable (T3 đọc từ T2, nhưng C2 ≺H C3).
+H4: Recoverable (không vi phạm).
+5.5
+TM:
+Procedure TransactionManager(Transaction T)
+    Input: Transaction T with operations (e.g., R(x), W(x), Commit, Abort)
+    Output: Execution result of T
+
+    1. Initialize:
+       - T.status = "ACTIVE"
+       - T.operations = list of operations in T
+       - T.lockRequests = empty queue
+       - T.coordinatorSite = currentSite
+       - T.participantSites = set of sites involved (based on data items)
+
+    2. For each operation op in T.operations:
+       - If op is R(x) or W(x):
+         - Determine site(s) s containing x
+         - For each site s in participantSites:
+           - Send LockRequest(T, op, x, s) to LM at site s
+           - Add request to T.lockRequests
+           - Wait for LockGranted or LockDenied from LM(s)
+           - If LockDenied:
+             - Wait (block T until lock is available)
+             - Retry LockRequest
+           - If LockGranted:
+             - Execute op (R(x) or W(x)) locally if x is at current site
+             - Send op to site s if x is remote
+
+    3. Prepare for Commit/Abort:
+       - If all operations completed successfully:
+         - Send PrepareToCommit(T) to all participantSites
+         - Wait for Vote(Yes/No) from each TM(s)
+         - If all Vote = Yes:
+           - Send GlobalCommit(T) to all participantSites
+           - Set T.status = "COMMITTED"
+           - Release all locks (via UnlockRequest to LM)
+         - Else:
+           - Send GlobalAbort(T) to all participantSites
+           - Set T.status = "ABORTED"
+           - Release all locks
+       - Else:
+         - Send GlobalAbort(T) to all participantSites
+         - Set T.status = "ABORTED"
+         - Release all locks
+
+    4. Return T.status
+End Procedure
+LM:
+Procedure LockManager(site s)
+    Input: Requests from TM (LockRequest, UnlockRequest)
+    Output: LockGranted, LockDenied
+
+    1. Initialize:
+       - LockTable = empty table {dataItem: {lockType, transactionList}}
+       - lockType = {READ, WRITE}
+
+    2. Handle LockRequest(T, op, x, s):
+       - If op is R(x):
+         - If LockTable[x] is empty or lockType = READ:
+           - Add T to LockTable[x].transactionList
+           - Set LockTable[x].lockType = READ
+           - Send LockGranted(T, x) to TM
+         - Else if LockTable[x].lockType = WRITE and T not in transactionList:
+           - Send LockDenied(T, x) to TM
+           - Block T until lock is released
+         - Else (WRITE lock by T):
+           - Send LockGranted(T, x) to TM
+       - If op is W(x):
+         - If LockTable[x] is empty:
+           - Add T to LockTable[x].transactionList
+           - Set LockTable[x].lockType = WRITE
+           - Send LockGranted(T, x) to TM
+         - Else if LockTable[x].lockType = READ and T not in transactionList:
+           - Send LockDenied(T, x) to TM
+           - Block T until all READ locks are released
+         - Else if LockTable[x].lockType = WRITE and T not in transactionList:
+           - Send LockDenied(T, x) to TM
+           - Block T until lock is released
+         - Else (WRITE lock by T):
+           - Send LockGranted(T, x) to TM
+
+    3. Handle UnlockRequest(T, x):
+       - If T in LockTable[x].transactionList:
+         - Remove T from LockTable[x].transactionList
+         - If LockTable[x].transactionList is empty:
+           - Remove x from LockTable
+           - Send LockReleased(x) to TM
+         - Else if LockTable[x].lockType = READ:
+           - Check for pending WRITE requests
+           - If exists, grant to highest priority T
+         - Else (WRITE):
+           - Check for pending READ/WRITE requests
+           - Grant to next T in queue
+       - Notify blocked transactions if locks are available
+
+    4. Enforce 2PL:
+       - After first UnlockRequest(T, x), disallow new LockRequest(T, y)
+       - Maintain Growing Phase and Shrinking Phase for T
+End Procedure
+5.6
+Procedure Centralized2PL(Transaction T)
+    1. For each operation op in T.operations:
+       - If op is R(x) or W(x):
+         - Send LockRequest(T, op, x) to Lock Manager
+         - Wait for LockGranted
+         - Execute op
+       - If op is Commit:
+         - Send UnlockRequest(T, all locks) to Lock Manager
+         - Set T.status = "COMMITTED"
+       - If op is Abort:
+         - Send UnlockRequest(T, all locks) to Lock Manager
+         - Set T.status = "ABORTED"
+    End Procedure
+
+Procedure LockManager
+    1. Maintain LockTable {dataItem: {lockType, transaction}}
+    2. Handle LockRequest(T, op, x):
+       - If LockTable[x] is free:
+         - Grant lock (READ or WRITE)
+         - Add T to LockTable[x]
+       - Else if conflict (e.g., WRITE requested and READ/WRITE exists):
+         - Deny lock, block T
+       - After first Unlock, disallow new LockRequest
+    End Procedure
+
+Procedure ModifiedCentralized2PL(Transaction T)
+    1. Initialize:
+       - T.predicateLocks = empty set  // Lưu các điều kiện khóa
+       - T.dataLocks = empty set      // Lưu các khóa hàng cụ thể
+
+    2. For each operation op in T.operations:
+       - If op is R(query) or W(query):  // query là điều kiện (e.g., "special meal")
+         - Extract predicate P from query (e.g., "meal = special")
+         - Send LockRequest(T, P, "PREDICATE") to Lock Manager  // Khóa điều kiện
+         - Wait for PredicateLockGranted
+         - Add P to T.predicateLocks
+         - For each data item x satisfying P (e.g., rows in FC):
+           - Send LockRequest(T, op, x) to Lock Manager
+           - Wait for LockGranted
+           - Add x to T.dataLocks
+           - Execute op on x
+       - If op is Commit:
+         - Send UnlockRequest(T, all P in predicateLocks, "PREDICATE") to Lock Manager
+         - Send UnlockRequest(T, all x in dataLocks) to Lock Manager
+         - Set T.status = "COMMITTED"
+       - If op is Abort:
+         - Send UnlockRequest(T, all P in predicateLocks, "PREDICATE") to Lock Manager
+         - Send UnlockRequest(T, all x in dataLocks) to Lock Manager
+         - Set T.status = "ABORTED"
+    End Procedure
+
+Procedure ModifiedLockManager
+    1. Initialize:
+       - LockTable = {dataItem: {lockType, transaction}}
+       - PredicateLockTable = {predicate: {lockType, transaction}}
+
+    2. Handle LockRequest(T, op, x):
+       - If op type is DATA (R(x) or W(x)):
+         - If LockTable[x] is free:
+           - Grant lock (READ or WRITE)
+           - Add T to LockTable[x]
+         - Else if conflict:
+           - Deny lock, block T
+       - After first Unlock, disallow new LockRequest
+
+    3. Handle LockRequest(T, P, "PREDICATE"):
+       - If PredicateLockTable[P] is empty:
+         - Grant PREDICATE lock (WRITE-like, exclusive)
+         - Add T to PredicateLockTable[P]
+         - Send PredicateLockGranted(T, P)
+       - Else if PredicateLockTable[P] contains T:
+         - Send PredicateLockGranted(T, P)
+       - Else:
+         - Deny lock, block T
+       - Ensure no new tuple satisfying P can be inserted until unlock
+
+    4. Handle UnlockRequest(T, P, "PREDICATE"):
+       - If T in PredicateLockTable[P]:
+         - Remove T from PredicateLockTable[P]
+         - If PredicateLockTable[P] is empty:
+           - Remove P from PredicateLockTable
+         - Notify blocked transactions if lock is released
+
+    5. Enforce 2PL:
+       - After first Unlock (data or predicate), disallow new LockRequest
+End Procedure
+
+5.7
+Tính toán
+
+    Thời gian đồng bộ: 24 giờ = 86,400 giây.
+    Độ phân giải đồng hồ: 0.1 giây (mỗi tick).
+    Drift tối đa cho phép: Vì timestamp ordering yêu cầu thứ tự thời gian phải chính xác trong phạm vi độ phân giải, sự chênh lệch tối đa giữa hai đồng hồ tại bất kỳ thời điểm nào không được vượt quá 0.1 giây. Điều này có nghĩa là drift tích lũy của mỗi đồng hồ cục bộ so với đồng hồ chuẩn trong 24 giờ phải được giới hạn để đảm bảo rằng ngay cả khi một đồng hồ chạy nhanh nhất và đồng hồ khác chạy chậm nhất, sự chênh lệch vẫn nằm trong 0.1 giây.
+    Tình huống tồi tệ nhất (worst case):
+        Giả sử site A có đồng hồ chạy nhanh nhất (drift dương), và site B có đồng hồ chạy chậm nhất (drift âm).
+        Drift tối đa cho phép giữa hai site là 0.1 giây. Vì mỗi site có thể trôi độc lập, tổng drift giữa hai site có thể là tổng của drift của cả hai.
+        Do đó, drift tối đa của một site so với đồng hồ chuẩn phải bằng một nửa khoảng chênh lệch tối đa, để tổng drift giữa hai site không vượt quá 0.1 giây.
+        Tính toán: Drift tối đa của một site = 0.1 / 2 = 0.05 giây.
+    Xác nhận:
+        Nếu site A drift +0.05 giây và site B drift -0.05 giây trong 24 giờ, sự chênh lệch giữa A và B là 0.05 + 0.05 = 0.1 giây, vẫn nằm trong độ phân giải.
+        Nếu drift của một site vượt quá 0.05 giây (ví dụ: +0.06 giây), và site khác drift -0.06 giây, sự chênh lệch sẽ là 0.06 + 0.06 = 0.12 giây, vượt quá 0.1 giây, dẫn đến khả năng timestamp ordering thất bại.
+
+Kết quả
+
+Mức trôi tối đa (maximum drift) tính bằng giây trong 24 giờ tại bất kỳ site nào để đảm bảo cơ chế timestamp-based đồng bộ hóa thành công là 0.05 giây.
+5.8
+TM:
+Procedure TransactionManager(Transaction T)
+    Input: Transaction T with operations (e.g., R(x), W(x), Commit, Abort)
+    Output: Execution result of T
+
+    1. Initialize:
+       - T.status = "ACTIVE"
+       - T.operations = list of operations in T
+       - T.lockRequests = empty queue
+       - T.coordinatorSite = currentSite
+       - T.participantSites = set of sites involved
+       - T.waitFor = empty set  // Giao dịch mà T đang chờ
+       - T.deadlockDetected = false
+
+    2. For each operation op in T.operations:
+       - If op is R(x) or W(x):
+         - Determine site(s) s containing x
+         - For each site s in participantSites:
+           - Send LockRequest(T, op, x, s) to LM at site s
+           - Add request to T.lockRequests
+           - Wait for LockGranted or LockDenied from LM(s)
+           - If LockDenied:
+             - Add waiting transaction (from LM) to T.waitFor
+             - Send WaitInfo(T, waitFor) to DeadlockDetector
+             - Wait (block T until lock is available or deadlock resolved)
+             - If DeadlockNotification(T) received:
+               - Set T.deadlockDetected = true
+               - Abort T (send GlobalAbort(T))
+               - Exit loop
+           - If LockGranted:
+             - Execute op locally if x is at current site
+             - Send op to site s if x is remote
+
+    3. Prepare for Commit/Abort:
+       - If T.deadlockDetected = false and all operations completed:
+         - Send PrepareToCommit(T) to all participantSites
+         - Wait for Vote(Yes/No) from each TM(s)
+         - If all Vote = Yes:
+           - Send GlobalCommit(T) to all participantSites
+           - Set T.status = "COMMITTED"
+           - Release all locks (via UnlockRequest to LM)
+         - Else:
+           - Send GlobalAbort(T) to all participantSites
+           - Set T.status = "ABORTED"
+           - Release all locks
+       - Else:
+         - Send GlobalAbort(T) to all participantSites
+         - Set T.status = "ABORTED"
+         - Release all locks
+
+    4. Return T.status
+End Procedure
+
+LM:
+Procedure LockManager(site s)
+    Input: Requests from TM (LockRequest, UnlockRequest)
+    Output: LockGranted, LockDenied, WaitInfo
+
+    1. Initialize:
+       - LockTable = {dataItem: {lockType, transactionList}}
+       - lockType = {READ, WRITE}
+       - WaitForGraph = {transaction: {waitingFor}}  // Phần WFG cục bộ
+
+    2. Handle LockRequest(T, op, x, s):
+       - If op is R(x):
+         - If LockTable[x] is empty or lockType = READ:
+           - Add T to LockTable[x].transactionList
+           - Set LockTable[x].lockType = READ
+           - Send LockGranted(T, x) to TM
+         - Else if LockTable[x].lockType = WRITE and T not in transactionList:
+           - Identify blocking transaction Tj in LockTable[x]
+           - Add T -> Tj to WaitForGraph[T].waitingFor
+           - Send LockDenied(T, x) and WaitInfo(T, Tj) to TM
+           - Block T
+         - Else:
+           - Send LockGranted(T, x) to TM
+       - If op is W(x):
+         - If LockTable[x] is empty:
+           - Add T to LockTable[x].transactionList
+           - Set LockTable[x].lockType = WRITE
+           - Send LockGranted(T, x) to TM
+         - Else if LockTable[x].lockType = READ or WRITE and T not in transactionList:
+           - Identify blocking transaction Tj in LockTable[x]
+           - Add T -> Tj to WaitForGraph[T].waitingFor
+           - Send LockDenied(T, x) and WaitInfo(T, Tj) to TM
+           - Block T
+         - Else:
+           - Send LockGranted(T, x) to TM
+
+    3. Handle UnlockRequest(T, x):
+       - If T in LockTable[x].transactionList:
+         - Remove T from LockTable[x].transactionList
+         - If LockTable[x].transactionList is empty:
+           - Remove x from LockTable
+           - Send LockReleased(x) to TM
+         - Else:
+           - Check WaitForGraph for blocked transactions
+           - If T -> Tj exists and Tj no longer blocks:
+             - Remove T -> Tj from WaitForGraph
+             - Notify TM to retry LockRequest for blocked T
+       - Send updated WaitForGraph to DeadlockDetector
+
+    4. Enforce 2PL:
+       - After first UnlockRequest(T, x), disallow new LockRequest(T, y)
+
+    5. Handle DeadlockDetectorInput:
+       - Periodically send WaitForGraph to coordinator
+       - If DeadlockNotification received for T:
+         - Send DeadlockNotification(T) to TM
+End Procedure
+
+Procedure DeadlockDetector
+    1. Initialize:
+       - GlobalWaitForGraph = empty
+
+    2. Collect WFG:
+       - Receive WaitInfo from all TMs
+       - Merge local WaitForGraphs into GlobalWaitForGraph
+
+    3. Detect Deadlock:
+       - Use depth-first search or cycle detection on GlobalWaitForGraph
+       - If cycle detected (e.g., T1 -> T2 -> T1):
+         - Select victim (e.g., T with lowest rollback cost)
+         - Send DeadlockNotification(victim) to TM of victim
+
+    4. Repeat periodically or on significant changes
+End Procedure
+
+5.9
+
+Mối quan hệ với kích thước giao dịch (Transaction Size)
+Kích thước giao dịch được định nghĩa là số lượng thao tác (operations) mỗi giao dịch, bao gồm các thao tác đọc và ghi. Mối quan hệ giữa yêu cầu lưu trữ của TM và kích thước giao dịch có thể được phân tích như sau:
+
+Tăng trưởng tuyến tính với số thao tác:
+
+Read Set và Write Set: Số lượng mục dữ liệu trong Read Set (các mục đã đọc) và Write Set (các mục sẽ ghi) tăng trực tiếp theo số lượng thao tác. Nếu mỗi thao tác tương ứng với một mục dữ liệu, thì kích thước của các tập hợp này tỷ lệ với số thao tác.
+
+Ví dụ: Nếu một giao dịch có 10 thao tác đọc và 5 thao tác ghi, Read Set chứa tối đa 10 mục và Write Set chứa 5 mục (có thể trùng lặp nếu cùng mục dữ liệu).
+
+
+Danh sách thao tác: TM cần lưu trữ lịch sử thao tác để kiểm tra trong pha xác thực. Số lượng thao tác lưu trữ tỷ lệ trực tiếp với kích thước giao dịch.
+
+
+Chi phí cố định bổ sung:
+
+Dù kích thước giao dịch thay đổi, TM vẫn cần lưu trữ một số thông tin cố định như timestamp, trạng thái giao dịch, và tham chiếu đến các giao dịch khác. Điều này tạo ra một chi phí cơ bản không phụ thuộc vào số thao tác.
+Tuy nhiên, trong pha xác thực, TM phải so sánh với các giao dịch khác, và số lượng so sánh phụ thuộc vào số giao dịch đang hoạt động (không phải kích thước giao dịch), nhưng dữ liệu so sánh (Read/Write Sets) lại phụ thuộc vào số thao tác.
+
+
+Tác động trong Validation Phase:
+
+Trong pha xác thực, TM kiểm tra xem có giao dịch nào commit trong khoảng thời gian từ khi giao dịch bắt đầu đọc đến khi xác thực, và các giao dịch đó có xung đột với Read Set hoặc Write Set của giao dịch hiện tại không.
+Số lượng xung đột tiềm năng tăng khi Read Set và Write Set lớn hơn (do nhiều thao tác), dẫn đến yêu cầu lưu trữ tạm thời cao hơn để giữ thông tin so sánh.
+Nếu xung đột xảy ra, TM cần lưu trữ thông tin rollback (ví dụ: giá trị cũ của dữ liệu), và số lượng này cũng tỷ lệ với số thao tác ghi.
+
+
+Tổng yêu cầu lưu trữ:
+
+Yêu cầu lưu trữ của TM có thể được biểu diễn như:
+$$Storage_{TM} = S_{fixed} + S_{ops} \cdot N_{ops}$$
+
+$ S_{fixed} $: Chi phí cố định (timestamp, trạng thái, v.v.).
+$ S_{ops} $: Chi phí lưu trữ mỗi thao tác (bao gồm Read/Write Sets).
+$ N_{ops} $: Số lượng thao tác (kích thước giao dịch).
+
+
+Mối quan hệ là tuyến tính, với độ dốc phụ thuộc vào độ phức tạp của mỗi thao tác (số lượng dữ liệu liên quan).
