@@ -118,4 +118,16 @@ export class OrderController {
         await this.orderService.completeOrder(orderId, data.userAction)
         return new ResponseWrapper(true)
     }
+
+    @Put('/:orderId/in-progress')
+    async changeStatusToInProgress(
+        @Param('orderId') orderId: string,
+        @QueryParams() data: BaseReq
+    ) {
+        await this.orderService.changeStatusToInProgress(
+            orderId,
+            data.userAction
+        )
+        return new ResponseWrapper(true)
+    }
 }
