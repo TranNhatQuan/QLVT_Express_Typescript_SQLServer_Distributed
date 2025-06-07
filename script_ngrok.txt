@@ -1,0 +1,1 @@
+ngrok http --domain=stunning-wrongly-skink.ngrok-free.app 3001

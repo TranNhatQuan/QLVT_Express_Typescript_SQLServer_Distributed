@@ -355,6 +355,30 @@ export class OrderService {
         )
     }
 
+    async changeStatusToInProgress(orderId: string, userAction: UserDTO) {
+        return await startTransaction(
+            DBTypeMapping[userAction.originDBType],
+            async (manager) => {
+                const order = await manager.findOne(Order, {
+                    where: { orderId },
+                })
+
+                this.checkStatus(order)
+
+                if (order.status !== OrderStatus.Init) {
+                    throw Errors.InvalidData
+                }
+
+                await this.checkUserAction(userAction, order, manager)
+
+                order.status = OrderStatus.InProgress
+                order.updatedBy = userAction.userId
+
+                await manager.save(Order, order)
+            }
+        )
+    }
+
     async checkUserAction(
         userAction: UserDTO,
         order: Order,

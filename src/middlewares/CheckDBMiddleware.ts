@@ -15,7 +15,8 @@ export class CheckDBSelectionMiddleware implements ExpressMiddlewareInterface {
     ) {
         req['userAction'].loadOrginDBType()
 
-        const dbType: DBType = req['dbType']
+        const dbType: DBType =
+            req['dbType'] || req.body.dbType || req.query.dbType
 
         if (
             dbType &&
