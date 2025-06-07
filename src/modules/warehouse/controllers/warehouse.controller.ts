@@ -18,6 +18,7 @@ import { WarehouseService } from '../services/warehouse.service'
 import { GetListWarehouseRequest } from '../requests/get-list-warehouse.request'
 import { UpdateWarehouseRequest } from '../requests/update-warehouse.request'
 import { CreateWarehouseRequest } from '../requests/create-warehouse.request'
+import { BaseReq } from '../../../base/base.request'
 
 @Service()
 @JsonController('/v1/warehouses')
@@ -71,8 +72,11 @@ export class WarehouseController {
 
     @Delete('/:warehouseId')
     @UseBefore(AssignReqParamsToBodyMiddleware)
-    async deleteBranch(@Param('warehouseId') warehouseId: number) {
-        await this.warehouseService.deleteWarehouse(warehouseId)
+    async deleteBranch(
+        @Param('warehouseId') warehouseId: number,
+        @QueryParams() data: BaseReq
+    ) {
+        await this.warehouseService.deleteWarehouse(warehouseId, data)
         return new ResponseWrapper(true)
     }
 }

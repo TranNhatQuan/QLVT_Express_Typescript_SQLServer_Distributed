@@ -24,10 +24,7 @@ export function currentUserChecker(): (
 
             const plainPayload = instanceToPlain(decoded.payload)
             const authPayload = plainToInstance(AuthPayload, plainPayload)
-            //   const user = await UserRepos.getProfile(authPayload.userId);
-            //   UserRepos.checkStatus(user);
 
-            //return user;
             return { userId: authPayload.userId }
         } catch (error: any) {
             logger.error(error.stack)

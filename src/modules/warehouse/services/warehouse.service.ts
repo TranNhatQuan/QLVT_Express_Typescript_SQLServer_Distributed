@@ -3,7 +3,7 @@ import { Errors } from '../../../utils/error'
 import { removeUndefinedFields } from '../../../utils'
 import { plainToInstance } from 'class-transformer'
 import { DBTypeMapping } from '../../../configs/types/application-constants.type'
-import { AppDataSources, startTransaction } from '../../../database/connection'
+import { startTransaction } from '../../../database/connection'
 import { Warehouse } from '../entities/warehouse.entity'
 import {
     GetListWarehouseRequest,
@@ -11,6 +11,7 @@ import {
 } from '../requests/get-list-warehouse.request'
 import { CreateWarehouseRequest } from '../requests/create-warehouse.request'
 import { UpdateWarehouseRequest } from '../requests/update-warehouse.request'
+import { BaseReq } from '../../../base/base.request'
 
 @Service()
 export class WarehouseService {
@@ -66,20 +67,23 @@ export class WarehouseService {
     }
 
     async updateWarehouse(req: UpdateWarehouseRequest) {
-        await startTransaction(AppDataSources.master, async (manager) => {
-            await manager.update(
-                Warehouse,
-                req.warehouseId,
-                req.getDataUpdate()
-            )
-        })
+        await startTransaction(
+            DBTypeMapping[req.userAction.originDBType],
+            async (manager) => {
+                await manager.update(
+                    Warehouse,
+                    req.warehouseId,
+                    req.getDataUpdate()
+                )
+            }
+        )
 
         return true
     }
 
-    async deleteWarehouse(warehouseId: number) {
+    async deleteWarehouse(warehouseId: number, data: BaseReq) {
         return await startTransaction(
-            AppDataSources.master,
+            DBTypeMapping[data.userAction.originDBType],
             async (manager) => {
                 await manager.softDelete(Warehouse, {
                     warehouseId,
