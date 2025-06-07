@@ -1,11 +1,14 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
 import { AppBaseEntity } from '../../../base/base.entity'
+import { Expose } from 'class-transformer'
 
 @Entity('Customer')
 export class Customer extends AppBaseEntity {
+    @Expose()
     @PrimaryGeneratedColumn()
     customerId: number
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: false,
@@ -13,6 +16,7 @@ export class Customer extends AppBaseEntity {
     })
     name: string
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: false,
@@ -20,6 +24,7 @@ export class Customer extends AppBaseEntity {
     })
     address: string
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: false,
@@ -27,6 +32,7 @@ export class Customer extends AppBaseEntity {
     })
     phone: string
 
+    @Expose()
     @Column({
         type: 'varchar',
         nullable: true,
@@ -34,6 +40,7 @@ export class Customer extends AppBaseEntity {
     })
     email: string
 
+    @Expose()
     @Column({
         type: 'text',
         nullable: true,

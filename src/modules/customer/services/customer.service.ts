@@ -67,6 +67,7 @@ export class CustomerService {
 
                 entity.setCreatedAndUpdatedBy(req.userAction.userId)
 
+               
                 await manager.insert(Customer, entity)
 
                 return entity
