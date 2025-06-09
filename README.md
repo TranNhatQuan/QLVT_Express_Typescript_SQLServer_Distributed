@@ -2,7 +2,7 @@
 
 🛠 Tech Stack
 
-    Backend: ExpressJS, TypeScript
+    ExpressJS, TypeScript
 
     Database: SQL Server (phân tán dọc & ngang) với TypeORM
 
