@@ -26,22 +26,22 @@
 
 🚀 Hướng dẫn chạy dự án
 
-Cài đặt dependencies:
+    Cài đặt dependencies:
 
-    yarn install
+        yarn install
 
-Tạo file cấu hình môi trường:
+    Tạo file cấu hình môi trường:
 
-    cp .env.example .env
+        cp .env.example .env
 
-Cập nhật file .env:
+    Cập nhật file .env:
 
-    Thông tin kết nối tới databases.
+        Thông tin kết nối tới databases.
 
-    Cấu hình Redis.
+        Cấu hình Redis.
 
-    Điền các field env khác còn thiếu.
+        Điền các field env khác còn thiếu.
 
-Khởi chạy ứng dụng:
+    Khởi chạy ứng dụng:
 
-    yarn start:dev
+        yarn start:dev
