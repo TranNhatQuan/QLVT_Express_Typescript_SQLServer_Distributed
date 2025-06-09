@@ -30,20 +30,18 @@ Cài đặt dependencies:
 
     yarn install
 
-    Tạo file cấu hình môi trường:
+Tạo file cấu hình môi trường:
 
     cp .env.example .env
 
 Cập nhật file .env:
 
-    Thông tin kết nối tới databases (master, dọc, các chi nhánh).
+    Thông tin kết nối tới databases.
 
     Cấu hình Redis.
 
-    Cấu hình khác phù hợp với môi trường của bạn.
+    Điền các field env khác còn thiếu.
 
-Khởi chạy ứng dụng ở môi trường phát triển:
+Khởi chạy ứng dụng:
 
     yarn start:dev
-
-Nếu bạn muốn mình viết thêm README đầy đủ với ví dụ .env, sơ đồ kiến trúc hoặc hướng dẫn cụ thể cho từng môi trường (dev/prod), mình có thể hỗ trợ tiếp.
