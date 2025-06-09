@@ -30,11 +30,11 @@
 
         yarn install
 
-    Tạo file cấu hình môi trường:
+    Tạo file env:
 
         cp .env.example .env
 
-    Cập nhật file .env:
+    Cập nhật .env:
 
         Thông tin kết nối tới databases.
 
