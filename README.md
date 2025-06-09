@@ -1,5 +1,4 @@
-###QLVT_Express_Typescript_SQLServer_Distributed
-
+###QLVT_Express_Typescript_SQLServer_Distributed  
 🛠 Tech Stack
 
     Backend: ExpressJS, TypeScript
