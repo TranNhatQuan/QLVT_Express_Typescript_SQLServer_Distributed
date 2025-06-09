@@ -26,13 +26,13 @@
 
 🚀 Hướng dẫn chạy dự án
 
-    Cài đặt dependencies:
+Cài đặt dependencies:
 
-yarn install
+    yarn install
 
-Tạo file cấu hình môi trường:
+    Tạo file cấu hình môi trường:
 
-cp .env.example .env
+    cp .env.example .env
 
 Cập nhật file .env:
 
